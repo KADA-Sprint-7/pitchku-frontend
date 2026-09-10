@@ -10,6 +10,7 @@ import FAQPage from '@/pages/FAQPage'
 import TermsPage from '@/pages/TermsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import PublicLayout from '@/layouts/PublicLayout'
+import AuthLayout from '@/layouts/AuthLayout'
 
 function App() {
   return (
@@ -18,8 +19,10 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/faq" element={<FAQPage />} />
       </Route>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+      </Route>
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/new" element={<WizardPage />} />
