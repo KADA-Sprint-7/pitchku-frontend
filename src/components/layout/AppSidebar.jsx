@@ -36,7 +36,7 @@ export default function AppSidebar() {
 
   const handleLogout = () => {
     setProfileOpen(false);
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -56,10 +56,9 @@ export default function AppSidebar() {
                 flex flex-col items-center justify-center gap-1
                 w-full py-3 px-1 rounded-xl
                 transition-all duration-150 group
-                ${
-                  isActive
-                    ? "bg-slate-700/70 text-white"
-                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                ${isActive
+                  ? "bg-slate-700/70 text-white"
+                  : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
                 }
               `}
             >
@@ -68,9 +67,8 @@ export default function AppSidebar() {
                 strokeWidth={isActive ? 2.2 : 1.8}
               />
               <span
-                className={`text-[10px] font-semibold leading-none tracking-wide ${
-                  isActive ? "text-amber-400" : "text-slate-500 group-hover:text-slate-300"
-                }`}
+                className={`text-[10px] font-semibold leading-none tracking-wide ${isActive ? "text-amber-400" : "text-slate-500 group-hover:text-slate-300"
+                  }`}
               >
                 {item.label}
               </span>
@@ -80,37 +78,40 @@ export default function AppSidebar() {
       </nav>
 
       {/* ── Bottom Avatar ─────────────────────────────────── */}
-      <div className="w-full px-2 pb-4 relative" ref={popoverRef}>
-
+      <div className="relative w-full px-2 pb-4" ref={popoverRef}>
         {/* Popover */}
         {profileOpen && (
-          <div className="absolute bottom-[60px] left-1/2 -translate-x-1/2 w-52 bg-[#131B2E] border border-white/10 rounded-2xl shadow-2xl shadow-black/60 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="absolute bottom-full left-full z-50 mb-2 ml-3 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#131B2E] shadow-2xl shadow-black/60 animate-in fade-in slide-in-from-bottom-2 duration-150">
             {/* User info header */}
-            <div className="px-4 py-3 border-b border-white/[0.06]">
-              <p className="text-xs font-semibold text-white truncate">Kopi Nusantara</p>
-              <p className="text-[11px] text-slate-400 truncate">founder@kopinusantara.id</p>
+            <div className="border-b border-white/[0.06] px-4 py-3">
+              <p className="truncate text-xs font-semibold text-white">
+                Kopi Nusantara
+              </p>
+              <p className="truncate text-[11px] text-slate-400">
+                founder@kopinusantara.id
+              </p>
             </div>
 
             {/* Actions */}
-            <div className="py-1.5 px-1.5 space-y-0.5">
+            <div className="space-y-0.5 px-1.5 py-1.5">
               <button
                 type="button"
                 onClick={() => {
                   setProfileOpen(false);
                   alert("Fitur Pengaturan akan segera hadir.");
                 }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800/70 rounded-lg transition-colors cursor-pointer"
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-slate-300 transition-colors hover:bg-slate-800/70 hover:text-white"
               >
-                <Settings className="w-3.5 h-3.5 text-slate-400" />
+                <Settings className="h-3.5 w-3.5 text-slate-400" />
                 Pengaturan
               </button>
 
               <button
                 type="button"
                 onClick={handleLogout}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
+                className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-300"
               >
-                <LogOut className="w-3.5 h-3.5" />
+                <LogOut className="h-3.5 w-3.5" />
                 Keluar
               </button>
             </div>
@@ -136,6 +137,6 @@ export default function AppSidebar() {
           </div>
         </button>
       </div>
-    </aside>
+    </aside >
   );
 }
