@@ -42,8 +42,8 @@ function RegisterForm() {
       setError("Kamu harus menyetujui syarat dan ketentuan");
       return;
     }
-    // No backend – redirect to login
-    navigate("/login");
+    // No backend – go straight to dashboard for now
+    navigate("/dashboard");
   };
 
   return (
