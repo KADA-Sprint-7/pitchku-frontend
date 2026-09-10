@@ -7,6 +7,7 @@ import WizardPage from '@/pages/WizardPage'
 import OutlinePage from '@/pages/OutlinePage'
 import EditorPage from '@/pages/EditorPage'
 import FAQPage from '@/pages/FAQPage'
+import TermsPage from '@/pages/TermsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import PublicLayout from '@/layouts/PublicLayout'
 
@@ -19,6 +20,7 @@ function App() {
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
       <Route path="/new" element={<WizardPage />} />
       <Route path="/outline/:projectId" element={<OutlinePage />} />
@@ -28,4 +30,4 @@ function App() {
   )
 }
 
-export default App
+export default App
