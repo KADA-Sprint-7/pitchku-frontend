@@ -6,12 +6,17 @@ import DashboardPage from '@/pages/DashboardPage'
 import WizardPage from '@/pages/WizardPage'
 import OutlinePage from '@/pages/OutlinePage'
 import EditorPage from '@/pages/EditorPage'
+import FAQPage from '@/pages/FAQPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import PublicLayout from '@/layouts/PublicLayout'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/faq" element={<FAQPage />} />
+      </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
