@@ -2,33 +2,50 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import AppSidebar from '@/components/layout/AppSidebar';
-import Footer from '@/components/layout/Footer';
 import TemplateSelector from '@/components/Wizard/TemplateSelector';
 import BusinessContextForm from '@/components/Wizard/BusinessContextForm';
+import BrandKitSelector from '@/components/Wizard/BrandKitSelector';
 import WizardStepper from '@/components/Wizard/WizardStepper';
 import WizardFooterBar from '@/components/Wizard/WizardFooterBar';
+
+const HEX_REGEX = /^#([A-Fa-f0-9]{6})$/;
 
 function WizardPage() {
   usePageTitle('Buat Pitch Deck Baru');
 
   // ── Wizard state ─────────────────────────────────────────
-  const [step, setStep] = useState(1); // 1 = Template selection, 2 = Context form
+  const [step, setStep] = useState(1); // 1 = Template selection, 2 = Context & Brand Kit
   const [selectedTemplateId, setSelectedTemplateId] = useState(null);
   const [formData, setFormData] = useState({});
   const [rawText, setRawText] = useState('');
 
+  const [brandKit, setBrandKit] = useState({
+    logoUrl: null,
+    logoFile: null,
+    logoName: '',
+    logoSize: '',
+    primaryColor: '#0F4C81',
+    accentColor: '#F2A007',
+    fontFamily: 'Inter',
+  });
+
   // ── Derived state ────────────────────────────────────────
   const canProceedStep1 = !!selectedTemplateId;
   const rawLen = (rawText || '').length;
-  const canProceedStep2 = rawLen >= 50 && rawLen <= 2000;
+  const isRawValid = rawLen >= 50 && rawLen <= 2000;
+  const isColorValid =
+    HEX_REGEX.test(brandKit.primaryColor || '') &&
+    HEX_REGEX.test(brandKit.accentColor || '');
+  const canProceedStep2 = isRawValid && isColorValid;
 
   // ── Handlers ─────────────────────────────────────────────
   const handleNext = () => {
     if (step === 1 && canProceedStep1) {
       setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (step === 2 && canProceedStep2) {
-      toast.success('Konteks bisnis berhasil disimpan!', {
-        description: 'Data sedang diproses untuk menghasilkan outline pitch deck.',
+      toast.success('Konteks bisnis & Brand Kit berhasil disimpan!', {
+        description: `Warna: ${brandKit.primaryColor} / ${brandKit.accentColor} • Font: ${brandKit.fontFamily}`,
       });
     }
   };
@@ -36,6 +53,7 @@ function WizardPage() {
   const handleBack = () => {
     if (step > 1) {
       setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -72,15 +90,44 @@ function WizardPage() {
               />
             )}
 
-            {/* Step 2: Business Context Form */}
+            {/* Step 2: Business Context Form & Brand Kit Selector (2 Columns) */}
             {step === 2 && (
-              <BusinessContextForm
-                templateId={selectedTemplateId}
-                formData={formData}
-                onFormDataChange={setFormData}
-                rawText={rawText}
-                onRawTextChange={setRawText}
-              />
+              <div className="space-y-8">
+                {/* Section Title Header */}
+                <div className="text-center space-y-2 max-w-2xl mx-auto">
+                  <span className="text-amber-400 text-xs font-bold uppercase tracking-widest">
+                    LANGKAH KEDUA
+                  </span>
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                    Konteks Bisnis & Brand Kit
+                  </h2>
+                  <p className="text-slate-400 text-sm leading-relaxed">
+                    Lengkapi informasi bisnis dan tentukan identitas visual agar AI dapat menghasilkan pitch deck yang profesional dan konsisten.
+                  </p>
+                </div>
+
+                {/* 2-Column Responsive Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                  {/* Left Column: Business Context & Raw Material Form */}
+                  <div className="lg:col-span-7">
+                    <BusinessContextForm
+                      templateId={selectedTemplateId}
+                      formData={formData}
+                      onFormDataChange={setFormData}
+                      rawText={rawText}
+                      onRawTextChange={setRawText}
+                    />
+                  </div>
+
+                  {/* Right Column: Brand Kit Visual */}
+                  <div className="lg:col-span-5 lg:sticky lg:top-6">
+                    <BrandKitSelector
+                      brandKit={brandKit}
+                      onBrandKitChange={setBrandKit}
+                    />
+                  </div>
+                </div>
+              </div>
             )}
           </div>
         </main>
