@@ -17,7 +17,6 @@ const TEMPLATES = [
     description:
       'Profil lengkap usaha UMKM — visi, misi, tim, portofolio, dan pencapaian utama.',
     icon: Building2,
-    badge: 'Profil Usaha',
     gradient: 'from-amber-500/20 via-amber-900/10 to-transparent',
     iconBg: 'bg-amber-500/10 border-amber-500/30 text-amber-400',
     accentRing: 'ring-amber-400/60',
@@ -29,7 +28,6 @@ const TEMPLATES = [
     description:
       'Template penawaran produk & SKU — spesifikasi, harga, minimum order, dan margin reseller.',
     icon: ShoppingBag,
-    badge: 'Retail FMCG',
     gradient: 'from-orange-500/20 via-orange-900/10 to-transparent',
     iconBg: 'bg-orange-500/10 border-orange-500/30 text-orange-400',
     accentRing: 'ring-orange-400/60',
@@ -41,7 +39,6 @@ const TEMPLATES = [
     description:
       'Usulan kerja sama & bagi hasil — skema investasi, proyeksi ROI, dan perjanjian mitra.',
     icon: Handshake,
-    badge: 'Partnership',
     gradient: 'from-emerald-500/20 via-emerald-900/10 to-transparent',
     iconBg: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400',
     accentRing: 'ring-emerald-400/60',
@@ -53,7 +50,6 @@ const TEMPLATES = [
     description:
       'Laporan keuangan & akuntabilitas — ringkasan omzet, laba-rugi, dan indikator performa.',
     icon: FileBarChart,
-    badge: 'Keuangan',
     gradient: 'from-sky-500/20 via-sky-900/10 to-transparent',
     iconBg: 'bg-sky-500/10 border-sky-500/30 text-sky-400',
     accentRing: 'ring-sky-400/60',
@@ -128,15 +124,6 @@ export default function TemplateSelector({ selectedId, onSelect }) {
                     >
                       <Icon className="w-8 h-8" strokeWidth={1.5} />
                     </div>
-                  </div>
-
-                  {/* Badge */}
-                  <div className="absolute top-3 left-3">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border ${tpl.iconBg}`}
-                    >
-                      {tpl.badge}
-                    </span>
                   </div>
 
                   {/* Selected check indicator */}
