@@ -35,104 +35,87 @@
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale; /* ========================================================= LIGHT MODE SHADCN TOKENS (PitchKu UI System) ========================================================= */
-  --background: oklch(0.985 0.005 247.9); /* #F8FAFC */
-  --foreground: oklch(0.19 0.035 258.4); /* #0F172A - Slate 900 */
-  --card: oklch(1 0 0); /* #FFFFFF */
-  --card-foreground: oklch(0.19 0.035 258.4);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(
-    0.19 0.035 258.4
-  ); /* Primary: Corporate Deep Blue (#0F4C81) */
-  --primary: oklch(0.395 0.115 244.5);
-  --primary-foreground: oklch(0.99 0 0); /* Secondary: Soft Slate Fill */
-  --secondary: oklch(0.96 0.008 248); /* #F1F5F9 - Slate 100 */
-  --secondary-foreground: oklch(0.25 0.05 250); /* Muted Text and Backgrounds */
-  --muted: oklch(0.965 0.005 248); /* #F8FAFC */
-  --muted-foreground: oklch(
-    0.52 0.03 250
-  ); /* #64748B - Slate 500 */ /* Accent: PitchKu Amber (#F2A007) */
-  --accent: oklch(0.745 0.175 75.2);
-  --accent-foreground: oklch(0.15 0.03 250); /* Destructive & System */
-  --destructive: oklch(0.61 0.22 25.5); /* #EF4444 */
-  --destructive-foreground: oklch(0.99 0 0);
-  --border: oklch(0.915 0.01 250); /* #E2E8F0 - Slate 200 */
-  --input: oklch(0.915 0.01 250);
-  --ring: oklch(
-    0.395 0.115 244.5
-  ); /* PitchKu Blue focus ring */ /* Analytics & Deck Charts */
-  --chart-1: oklch(0.395 0.115 244.5); /* Blue */
-  --chart-2: oklch(0.745 0.175 75.2); /* Amber */
-  --chart-3: oklch(0.69 0.17 162); /* Emerald Green */
-  --chart-4: oklch(0.58 0.12 245); /* Sky Blue */
-  --chart-5: oklch(0.48 0.05 250); /* Slate */
-  --radius: 0.625rem; /* Sidebar Tokens */
-  --sidebar: oklch(0.99 0.002 248);
-  --sidebar-foreground: oklch(0.19 0.035 258.4);
-  --sidebar-primary: oklch(0.395 0.115 244.5);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.01 250);
-  --sidebar-accent-foreground: oklch(0.19 0.035 258.4);
-  --sidebar-border: oklch(0.915 0.01 250);
-  --sidebar-ring: oklch(0.395 0.115 244.5);
-} /* ========================================================= DARK MODE TOKENS (Luminous Midnight) ========================================================= */
+  /* SHADCN TOKENS (HEX values to fix html2canvas oklch unsupported parser error) */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+  --primary: #0f4c81;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f8fafc;
+  --muted-foreground: #64748b;
+  --accent: #f2a007;
+  --accent-foreground: #0f172a;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #0f4c81;
+  --chart-1: #0f4c81;
+  --chart-2: #f2a007;
+  --chart-3: #10b981;
+  --chart-4: #38bdf8;
+  --chart-5: #64748b;
+  --radius: 0.625rem;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #0f4c81;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #0f4c81;
+}
+
 .dark,
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #94a3b8; /* Slate 400 */
-    --text-h: #f8fafc; /* Slate 50 */
-    --bg: #0b1326; /* Midnight Obsidian */
-    --border-color: #243048; /* Dark Slate Border */
-    --code-bg: #131b2e; /* Midnight Card Low */
+    --text: #94a3b8;
+    --text-h: #f8fafc;
+    --bg: #0b1326;
+    --border-color: #243048;
+    --code-bg: #131b2e;
     --shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
-    --shadow-card:
-      0 10px 25px -4px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --shadow-card: 0 10px 25px -4px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
   }
 }
 .dark {
-  --background: oklch(0.14 0.035 255); /* #0B1326 - Deep Midnight */
-  --foreground: oklch(0.985 0.005 247.9); /* #F8FAFC - Crisp Slate 50 */
-  --card: oklch(0.18 0.035 255); /* #131B2E - Surface Container */
-  --card-foreground: oklch(0.985 0.005 247.9);
-  --popover: oklch(0.18 0.035 255);
-  --popover-foreground: oklch(
-    0.985 0.005 247.9
-  ); /* Primary: Vibrant Amber (#F2A007) for highest contrast CTA */
-  --primary: oklch(0.745 0.175 75.2);
-  --primary-foreground: oklch(
-    0.12 0.03 255
-  ); /* Secondary: Subtle Slate container */
-  --secondary: oklch(0.24 0.035 255); /* #1E293B */
-  --secondary-foreground: oklch(0.985 0 0); /* Muted Text and Backgrounds */
-  --muted: oklch(0.22 0.03 255);
-  --muted-foreground: oklch(
-    0.7 0.02 250
-  ); /* #94A3B8 - Slate 400 */ /* Accent: Sky Glow (#38BDF8) / Amber */
-  --accent: oklch(0.75 0.14 225); /* #38BDF8 */
-  --accent-foreground: oklch(0.12 0.03 255);
-  --destructive: oklch(0.65 0.21 25.5);
-  --destructive-foreground: oklch(
-    0.99 0 0
-  ); /* Borders: Subtle white alpha border */
-  --border: oklch(1 0 0 / 12%); /* Subtle glass line */
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(
-    0.745 0.175 75.2
-  ); /* Amber Glow Focus */ /* Chart Colors for Pitch Deck Dark Mode */
-  --chart-1: oklch(0.745 0.175 75.2); /* Amber */
-  --chart-2: oklch(0.75 0.14 225); /* Sky Blue #38BDF8 */
-  --chart-3: oklch(0.72 0.18 160); /* Mint / Emerald */
-  --chart-4: oklch(0.62 0.2 280); /* Violet */
-  --chart-5: oklch(0.45 0.04 250); /* Muted Blue */ /* Dark Sidebar */
-  --sidebar: oklch(0.12 0.035 255); /* Darker midnight rail */
-  --sidebar-foreground: oklch(0.985 0.005 247.9);
-  --sidebar-primary: oklch(0.745 0.175 75.2);
-  --sidebar-primary-foreground: oklch(0.12 0.03 255);
-  --sidebar-accent: oklch(0.2 0.035 255);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.745 0.175 75.2);
+  --background: #0b1326;
+  --foreground: #f8fafc;
+  --card: #131b2e;
+  --card-foreground: #f8fafc;
+  --popover: #131b2e;
+  --popover-foreground: #f8fafc;
+  --primary: #f2a007;
+  --primary-foreground: #0b1326;
+  --secondary: #1e293b;
+  --secondary-foreground: #ffffff;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #38bdf8;
+  --accent-foreground: #0b1326;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.15);
+  --ring: #f2a007;
+  --chart-1: #f2a007;
+  --chart-2: #38bdf8;
+  --chart-3: #10b981;
+  --chart-4: #a855f7;
+  --chart-5: #64748b;
+  --sidebar: #080d1a;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #f2a007;
+  --sidebar-primary-foreground: #0b1326;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #f2a007;
 } /* ========================================================= TAILWIND V4 INLINE THEME DECLARATION ========================================================= */
 @theme inline {
   --font-heading: var(--font-heading);

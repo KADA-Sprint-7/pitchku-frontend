@@ -139,4 +139,52 @@ export const projectStore = {
     }
     return null;
   },
+
+  // Simpan payload deck lengkap (PitchKuDeckPayload) ke store
+  saveDeckPayload: (projectId, deckPayload) => {
+    const all = getAllProjects();
+    if (all[projectId]) {
+      all[projectId].deckPayload = deckPayload;
+      all[projectId].status = 'editing';
+      all[projectId].updatedAt = new Date().toISOString();
+      saveAllProjects(all);
+      return all[projectId];
+    }
+    return null;
+  },
+
+  // Baca payload deck dari store
+  getDeckPayload: (projectId) => {
+    const all = getAllProjects();
+    return all[projectId]?.deckPayload || null;
+  },
+
+  // Update satu slide di dalam deckPayload berdasarkan slideIndex
+  updateSlide: (projectId, slideIndex, updatedSlide) => {
+    const all = getAllProjects();
+    if (all[projectId]?.deckPayload) {
+      const slides = [...all[projectId].deckPayload.slides];
+      slides[slideIndex] = { ...slides[slideIndex], ...updatedSlide };
+      all[projectId].deckPayload = { ...all[projectId].deckPayload, slides };
+      all[projectId].updatedAt = new Date().toISOString();
+      saveAllProjects(all);
+      return all[projectId].deckPayload;
+    }
+    return null;
+  },
+
+  // Update judul deck (deckTitle rename inline)
+  updateDeckTitle: (projectId, newTitle) => {
+    const all = getAllProjects();
+    if (all[projectId]) {
+      all[projectId].title = newTitle;
+      if (all[projectId].deckPayload) {
+        // deckPayload tidak menyimpan title terpisah; title tetap ada di project root
+      }
+      all[projectId].updatedAt = new Date().toISOString();
+      saveAllProjects(all);
+      return all[projectId];
+    }
+    return null;
+  },
 };
