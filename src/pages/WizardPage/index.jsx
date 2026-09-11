@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import AppSidebar from '@/components/layout/AppSidebar';
@@ -7,27 +8,55 @@ import BusinessContextForm from '@/components/Wizard/BusinessContextForm';
 import BrandKitSelector from '@/components/Wizard/BrandKitSelector';
 import WizardStepper from '@/components/Wizard/WizardStepper';
 import WizardFooterBar from '@/components/Wizard/WizardFooterBar';
+import { projectStore } from '@/lib/projectStore';
 
 const HEX_REGEX = /^#([A-Fa-f0-9]{6})$/;
 
 function WizardPage() {
   usePageTitle('Buat Pitch Deck Baru');
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const initialProjectId = location.state?.projectId;
+  const initialProject = initialProjectId
+    ? projectStore.getProject(initialProjectId)
+    : null;
 
   // ── Wizard state ─────────────────────────────────────────
-  const [step, setStep] = useState(1); // 1 = Template selection, 2 = Context & Brand Kit
-  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [rawText, setRawText] = useState('');
+  const [step, setStep] = useState(location.state?.step || 1); // 1 = Template selection, 2 = Context & Brand Kit
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    initialProject?.template || null
+  );
+  const [formData, setFormData] = useState(initialProject?.structuredData || {});
+  const [rawText, setRawText] = useState(initialProject?.rawContext || '');
 
-  const [brandKit, setBrandKit] = useState({
-    logoUrl: null,
-    logoFile: null,
-    logoName: '',
-    logoSize: '',
-    primaryColor: '#0F4C81',
-    accentColor: '#F2A007',
-    fontFamily: 'Inter',
-  });
+  const [brandKit, setBrandKit] = useState(
+    initialProject?.brandKit || {
+      logoUrl: null,
+      logoFile: null,
+      logoName: '',
+      logoSize: '',
+      primaryColor: '#0F4C81',
+      accentColor: '#F2A007',
+      fontFamily: 'Inter',
+    }
+  );
+
+  // Sync state when location.state updates (e.g. back navigation from OutlinePage)
+  useEffect(() => {
+    if (location.state?.step) {
+      setStep(location.state.step);
+    }
+    if (location.state?.projectId) {
+      const p = projectStore.getProject(location.state.projectId);
+      if (p) {
+        if (p.template) setSelectedTemplateId(p.template);
+        if (p.structuredData) setFormData(p.structuredData);
+        if (p.rawContext) setRawText(p.rawContext);
+        if (p.brandKit) setBrandKit(p.brandKit);
+      }
+    }
+  }, [location.state]);
 
   // ── Derived state ────────────────────────────────────────
   const canProceedStep1 = !!selectedTemplateId;
@@ -44,9 +73,31 @@ function WizardPage() {
       setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (step === 2 && canProceedStep2) {
-      toast.success('Konteks bisnis & Brand Kit berhasil disimpan!', {
-        description: `Warna: ${brandKit.primaryColor} / ${brandKit.accentColor} • Font: ${brandKit.fontFamily}`,
+      const existingProjectId = location.state?.projectId;
+      let project;
+
+      if (existingProjectId) {
+        project = projectStore.updateProjectData(existingProjectId, {
+          template: selectedTemplateId,
+          structuredData: formData,
+          rawContext: rawText,
+          brandKit,
+        });
+      } else {
+        project = projectStore.createProjectDraft({
+          template: selectedTemplateId,
+          structuredData: formData,
+          rawContext: rawText,
+          brandKit,
+        });
+      }
+
+      toast.success('Konteks bisnis & Brand Kit tersimpan!', {
+        description: 'AI sedang menyusun kerangka slide presentasi...',
       });
+
+      // Navigate to Step 2 / Outline Review Page
+      navigate(`/outline/${project?.id || existingProjectId}`);
     }
   };
 
