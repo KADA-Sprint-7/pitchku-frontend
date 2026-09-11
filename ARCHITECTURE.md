@@ -30,20 +30,24 @@ This split follows the FRD's module boundaries (FR-02 through FR-06) but was res
 
 ```
 Landing → Register/Login
-  → Dashboard (project list)
-    → New Project Wizard
-      Step 1: Template select (4 templates)
-      Step 2: Business context form (dynamic per template, 50-2000 char free text)
+  → Dashboard (project list with search, status filters & metrics)
+    → New Project Wizard (/new)
+      Step 1: Template select (4 templates: company_profile, penawaran_produk, proposal_kerjasama, laporan_ringkas)
+      Step 2: Business context form (dynamic fields, number validation, 50-2000 char free text) + Brand Kit Visual (logo, colors, typography)
       → [AI Stage 1: outline generation — backend call]
-    → Outline Review (edit/reorder/add/delete slide titles)
+    → Outline Review (/outline/:projectId)
+      - Review AI-generated slide structure (8-10 slides)
+      - Inline edit slide titles (<= 60 chars) & objectives
+      - Reorder slides (drag & drop / grip handle)
+      - Add, delete, duplicate, reset to default structure
       → [AI Stage 2: full slide JSON generation — backend call]
-    → Slide Editor
-      - 16:9 renderer, 6 canonical layouts
+    → Slide Editor (/editor/:projectId)
+      - 16:9 renderer, 6 canonical layouts (title_slide, title_bullets, two_column, metrics_grid, card_grid, contact_closing)
       - in-place text editing with character counters
       - sidebar thumbnails, reorder/delete slides
       - image swap (stock photo search or manual upload)
       - Brand Kit (logo, primary/accent color) applied throughout
-      → Export: Download PPTX / Download PDF
+      → Export: Download PPTX
 ```
 
 ## Canonical slide layouts

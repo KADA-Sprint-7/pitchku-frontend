@@ -56,10 +56,10 @@ src/
 | `/terms` | TermsPage | None (standalone header/footer) | Implemented (10 legal terms, navigation back) |
 | `/login` | LoginPage | `AuthLayout` | Implemented (Marketing preview + `LoginForm` component) |
 | `/register` | RegisterPage | `AuthLayout` | Implemented (Marketing preview + `RegisterForm` component) |
-| `/dashboard` | DashboardPage | Standalone / Pending ProtectedLayout | Placeholder (`h1`) |
-| `/new` | WizardPage | Standalone / Pending ProtectedLayout | Placeholder (`h1`) |
-| `/outline/:projectId` | OutlinePage | Standalone / Pending ProtectedLayout | Placeholder (`h1`) |
-| `/editor/:projectId` | EditorPage | Standalone / Pending ProtectedLayout | Placeholder (`h1`) |
+| `/dashboard` | DashboardPage | Standalone with `AppSidebar` | Implemented (Header, Metrics, Filter/Search, ProjectGrid) |
+| `/new` | WizardPage | Standalone with `AppSidebar` | Implemented (Step 1: TemplateSelector, Step 2: BusinessContextForm + BrandKitSelector, 3-point Stepper) |
+| `/outline/:projectId` | OutlinePage | Standalone with `AppSidebar` | In Progress / Next Up (AI Outline Review, reordering, title editing) |
+| `/editor/:projectId` | EditorPage | Standalone with `AppSidebar` | Pending (16:9 Canvas renderer, 6 layouts, in-place edit, PPTX export) |
 | `*` | NotFoundPage | None | Implemented (404 screen) |
 
 ---
@@ -68,47 +68,48 @@ src/
 
 ### What is currently implemented (In the Codebase now):
 1. **Public & Marketing Pages**:
-   - **LandingPage** (`/`): Fully built with `HeroSection`, `AdvantageSection` (metrics & benefits), `HowItWorks` (3 steps), `TemplateCatalogue` (4 curated templates with interactive live card previews), and `BottomCTA`.
+   - **LandingPage** (`/`): Fully built with `HeroSection`, `AdvantageSection`, `HowItWorks`, `TemplateCatalogue`, and `BottomCTA`.
    - **FAQPage** (`/faq`): Fully built with interactive accordion covering 10 detailed UMKM Q&As.
    - **TermsPage** (`/terms`): Standalone legal page covering 10 service & data privacy clauses.
    - **NotFoundPage** (`*`): 404 handler with return links.
 2. **Authentication Flow (UI & Client-Side)**:
-   - **`AuthLayout`**: Shared 2-column layout (left marketing showcase with dynamic mock pitch deck card, stats, trust badges; right form panel with `/login` vs `/register` tab switcher).
-   - **`LoginForm`** (`src/components/LoginPage/LoginForm.jsx`): Login form, email/password validation, show/hide password, remember me, and mock redirect to `/dashboard`.
-   - **`RegisterForm`** (`src/components/RegisterPage/RegisterForm.jsx`): Registration form, full name, company name, email, password confirmation, terms agreement validation, mock redirect to `/login`.
+   - **`AuthLayout`**: Shared 2-column layout (marketing showcase + form panel with `/login` vs `/register` tab switcher).
+   - **`LoginForm`** (`src/components/LoginPage/LoginForm.jsx`): Login form with mock redirect to `/dashboard`.
+   - **`RegisterForm`** (`src/components/RegisterPage/RegisterForm.jsx`): Registration form with mock redirect to `/login`.
 3. **Layout & Navigation Components**:
-   - **`Navbar`** (`src/components/layout/Navbar.jsx`): Responsive header with section observer smooth scrolling, mobile sidebar drawer, and CTA buttons.
-   - **`Footer`** (`src/components/layout/Footer.jsx`): Global footer with branding, anchor links, template categories, and copyright.
-   - **`PublicLayout`** (`src/layouts/PublicLayout.jsx`): Layout wrapper for public pages with sticky Navbar and `<Outlet />`.
-4. **Design System & UI Components**:
-   - Palette tailored for dark theme (`#070C15`, PitchKu amber, slate variants).
-   - Base UI + shadcn primitives: `accordion.jsx`, `button.jsx`, `card.jsx`, `input.jsx`.
-   - Typography loaded: `@fontsource-variable/plus-jakarta-sans` and `@fontsource-variable/geist`.
-   - Utility hook `usePageTitle.js` for dynamic document title updates.
+   - **`AppSidebar`** (`src/components/layout/AppSidebar.jsx`): Canva-style narrow icon-rail sidebar (72px) with stacked icon+label, active state highlight, and bottom profile avatar popover (Pengaturan & Keluar).
+   - **`Navbar`** (`src/components/layout/Navbar.jsx`) & **`Footer`** (`src/components/layout/Footer.jsx`): Public navigation and footer.
+   - **`PublicLayout`** (`src/layouts/PublicLayout.jsx`): Layout wrapper for public marketing pages.
+4. **App Workspace & Wizard Flow**:
+   - **`DashboardPage`** (`/dashboard`): Workspace dashboard with metrics (Total Presentasi & Kuota AI), search & status filter tabs (Semua, Selesai, Draft), and responsive project card grid.
+   - **`WizardPage`** (`/new`): 
+     - Step 1: `TemplateSelector` (4 templates with 16:9 visual preview).
+     - Step 2: `BusinessContextForm` (numeric validations for year/team/price/moq/margin/investment/revenue/profit + shadcn Select for report period + 50-2000 char raw text area) + `BrandKitSelector` (logo upload <=2MB, 4 color presets, custom HEX pickers, font selector).
+     - `WizardStepper` (3-point stepper) & `WizardFooterBar` (sticky navigation).
+     - Sonner toast confirmation on step completion.
+5. **Design System & UI Components**:
+   - Palette tailored for dark theme (`#070C15`, `#0B111E`, PitchKu amber, slate variants).
+   - Base UI + shadcn primitives: `accordion.jsx`, `button.jsx`, `card.jsx`, `dialog.jsx`, `input.jsx`, `select.jsx`, `sonner.jsx`.
+   - Typography: `@fontsource-variable/plus-jakarta-sans` and `@fontsource-variable/geist`.
+   - Utility hooks: `usePageTitle.js`.
 
 ---
 
 ### What has NOT been implemented yet (Pending in the Codebase):
-1. **Core Product & App Flow (Currently Placeholders)**:
-   - **`DashboardPage`** (`/dashboard`): Project listing, project card status, search/filter, "Buat Pitch Deck Baru" button, duplicate/delete actions.
-   - **`WizardPage`** (`/new`): Step 1 (Template selection among 4 templates) and Step 2 (Dynamic business context form with 50–2000 character limits and template-specific guidance).
-   - **`OutlinePage`** (`/outline/:projectId`): Reviewing AI-generated slide outlines, editing slide titles, adding/reordering/deleting slides, triggering Stage 2 generation.
+1. **Core Product & App Flow (Pending)**:
+   - **`OutlinePage`** (`/outline/:projectId`): Reviewing AI-generated slide outlines, editing slide titles (max 60 chars), adding/reordering/deleting/duplicating slides, triggering Stage 2 full deck generation.
    - **`EditorPage`** (`/editor/:projectId`):
      - 16:9 canvas renderer for the 6 canonical slide layouts (`title_slide`, `title_bullets`, `two_column`, `metrics_grid`, `card_grid`, `contact_closing`).
      - In-place text editing with character counters.
      - Slide sidebar thumbnails, reorder, delete, and add slides.
      - Image swap (stock search or manual upload).
-     - Brand kit controls (logo upload, primary/accent color picker).
-     - Export trigger buttons (PPTX / PDF download).
+     - Export trigger buttons (PPTX download).
 2. **State & Architecture Wiring**:
-   - **`ProtectedLayout.jsx`**: Currently an empty file (needs auth session check and navigation guard for `/dashboard`, `/new`, `/outline/:id`, `/editor/:id`).
-   - **State Management / Context**: Slide deck project state context, wizard draft context, or editor state reducer.
+   - Slide deck project state / storage (mock store / Context) connecting `/new` -> `/outline/:projectId` -> `/editor/:projectId`.
+   - Protected layout / auth session guard.
 3. **Backend API Integration & Client**:
-   - API client / fetch wrapper in `src/lib/` (consuming `VITE_API_BASE_URL`).
-   - Auth endpoints integration (session token handling, login, register, logout).
-   - Outline generation API call (Stage 1 LLM).
-   - Full slide generation API call (Stage 2 LLM).
-   - Export API integration (initiating PPTX/PDF generation and download stream).
+   - API client wrapper in `src/lib/` (consuming `VITE_API_BASE_URL`).
+   - Auth endpoints, Stage 1 LLM outline generation, Stage 2 LLM slide generation, and PPTX export stream.
 4. **Validation Rules Enforcement**:
    - Strict character limit counters and validation matching the backend schema:
      - `title` ≤ 60 chars
