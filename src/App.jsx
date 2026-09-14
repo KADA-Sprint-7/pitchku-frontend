@@ -12,6 +12,7 @@ import TermsPage from '@/pages/TermsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import PublicLayout from '@/layouts/PublicLayout'
 import AuthLayout from '@/layouts/AuthLayout'
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 function App() {
   return (
@@ -27,10 +28,15 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
         </Route>
         <Route path="/terms" element={<TermsPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/new" element={<WizardPage />} />
-        <Route path="/outline/:projectId" element={<OutlinePage />} />
-        <Route path="/editor/:projectId" element={<EditorPage />} />
+        
+        {/* Protected User Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/new" element={<WizardPage />} />
+          <Route path="/outline/:projectId" element={<OutlinePage />} />
+          <Route path="/editor/:projectId" element={<EditorPage />} />
+        </Route>
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </>
