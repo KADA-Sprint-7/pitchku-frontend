@@ -10,9 +10,116 @@
 // Mock content generators per layout
 // ---------------------------------------------------------------------------
 
-export function mockContentForLayout(layoutType, title, structuredData = {}) {
+export function mockContentForLayout(layoutType, title, structuredData = {}, templateId = 'company_profile') {
   const company = structuredData.companyName || structuredData.productName || 'Usaha Anda';
+  const moq = structuredData.moq ? `${structuredData.moq} pcs` : '100 pcs';
+  const margin = structuredData.profitMargin ? `${structuredData.profitMargin}%` : '25%';
+  const investment = structuredData.investmentValue ? `Rp ${structuredData.investmentValue}` : 'Rp 100 Juta';
+  const revenue = structuredData.revenue ? `Rp ${structuredData.revenue}` : 'Rp 250 Juta';
+  const profit = structuredData.profit ? `Rp ${structuredData.profit}` : 'Rp 65 Juta';
+  const year = structuredData.yearFounded || '2021';
+  const team = structuredData.teamSize ? `${structuredData.teamSize} Orang` : '10+ Tim Core';
+  const target = structuredData.partnerTarget || structuredData.industry || 'Calon Mitra / Klien';
 
+  if (templateId === 'proposal_kerjasama') {
+    switch (layoutType) {
+      case 'title_slide':
+        return {
+          subtitle: `Proposal Kemitraan Strategis & Investasi — ${company}`,
+          imageQuery: 'business partnership handshake meeting',
+        };
+      case 'metrics_grid':
+        return {
+          subtitle: `Rincian Kebutuhan Modal & Proyeksi Kemitraan ${company}`,
+          cards: [
+            { header: investment, description: 'Total Nilai Investasi / Modal' },
+            { header: margin, description: 'Estimasi Pengembalian (ROI)' },
+            { header: profit, description: 'Proyeksi Bagi Hasil / Bulan' },
+            { header: team, description: 'Kapasitas Tim Eksekusi Proyek' },
+          ],
+        };
+      case 'two_column':
+        return {
+          subtitle: `Skema Kolaborasi & Pembagian Hak Mitra`,
+          cards: [
+            {
+              header: 'Hak & Keuntungan Investor',
+              description: `Menerima porsi dividen berkala dengan potensi profit bulanan hingga ${profit}.`,
+            },
+            {
+              header: 'Tanggung Jawab Pengelola',
+              description: `Dikelola langsung oleh ${company} (didirikan sejak ${year}) secara profesional.`,
+            },
+          ],
+        };
+      case 'card_grid':
+        return {
+          subtitle: `Alokasi Pendanaan & Mitigasi Risiko`,
+          cards: [
+            { header: 'Modal Kerja & Inventaris', description: 'Pengadaan bahan baku, alat produksi, dan operasional awal.' },
+            { header: 'Ekspansi & Pemasaran', description: `Penetrasi pasar untuk menjangkau target ${target}.` },
+            { header: 'Manajemen Operasional', description: `Dijalankan oleh ${team} teruji dengan SOP terstandar.` },
+            { header: 'Mitigasi Risiko', description: 'Jaminan transparansi laporan keuangan periodik dan legalitas lengkap.' },
+          ],
+        };
+    }
+  }
+
+  if (templateId === 'penawaran_produk') {
+    switch (layoutType) {
+      case 'title_slide':
+        return {
+          subtitle: `Katalog Resmi & Penawaran Harga Spesial — ${company}`,
+          imageQuery: 'product catalog retail showcase',
+        };
+      case 'metrics_grid':
+        return {
+          subtitle: `Struktur Harga & Diskon Grosir ${company}`,
+          cards: [
+            { header: moq, description: 'Minimum Order Quantity (MOQ)' },
+            { header: margin, description: 'Diskon / Margin Reseller' },
+            { header: profit, description: 'Potensi Profit Mitra / Bulan' },
+            { header: '24 Jam', description: 'Kecepatan Proses Pemesanan' },
+          ],
+        };
+      case 'two_column':
+        return {
+          subtitle: `Spesifikasi Produk & Fasilitas Reseller`,
+          cards: [
+            {
+              header: 'Spesifikasi & Jaminan Mutu',
+              description: 'Bahan baku kualitas terbaik dengan kemasan higienis siap edar.',
+            },
+            {
+              header: 'Dukungan Marketing',
+              description: 'Gratis materi promosi digital, foto produk HD, dan banner toko.',
+            },
+          ],
+        };
+    }
+  }
+
+  if (templateId === 'laporan_ringkas') {
+    switch (layoutType) {
+      case 'title_slide':
+        return {
+          subtitle: `Laporan Kinerja & Akuntabilitas Bisnis — ${company}`,
+          imageQuery: 'financial report charts analytics',
+        };
+      case 'metrics_grid':
+        return {
+          subtitle: `Rangkuman Kinerja Finansial ${company}`,
+          cards: [
+            { header: revenue, description: 'Total Omzet Kotor' },
+            { header: profit, description: 'Laba Bersih Operasional' },
+            { header: margin, description: 'Margin Keuntungan Bersih' },
+            { header: year, description: 'Tahun Awal Rekam Jejak' },
+          ],
+        };
+    }
+  }
+
+  // Fallback ke Company Profile / General
   switch (layoutType) {
     case 'title_slide':
       return {
@@ -22,30 +129,30 @@ export function mockContentForLayout(layoutType, title, structuredData = {}) {
 
     case 'title_bullets':
       return {
-        subtitle: 'Poin-poin strategis dan pencapaian utama bisnis',
+        subtitle: `Poin-poin strategis dan pencapaian utama ${company}`,
         bullets: [
-          'Pertumbuhan revenue YoY sebesar +40% dalam 12 bulan terakhir',
-          'Ekspansi ke 3 kota baru dengan margin profitabilitas 28%',
-          'Efisiensi biaya operasional turun 18% pasca-digitalisasi proses',
-          'Tim inti berpengalaman 5+ tahun di industri terkait',
-          'Pipeline proyek baru bernilai 2,5× dari target awal',
+          `Target pertumbuhan omzet kumulatif mencapai ${revenue} per periode.`,
+          `Estimasi profitabilitas bersih usaha berada di kisaran ${margin}.`,
+          `Didukung oleh ${team} berdedikasi sejak didirikan tahun ${year}.`,
+          `Skema kemitraan terbuka untuk segmen target: ${target}.`,
+          `Kapasitas pasokan dan efisiensi operasional skala menengah-besar.`,
         ],
         imageQuery: 'business growth analytics chart premium dark',
       };
 
     case 'two_column':
       return {
-        subtitle: 'Perbandingan strategis dua dimensi utama',
+        subtitle: `Perbandingan strategis dua dimensi utama ${company}`,
         cards: [
           {
-            header: 'Kolom Kiri',
+            header: 'Keunggulan Operasional',
             description:
-              'Uraian detail terkait aspek pertama yang mendukung nilai proposisi bisnis secara keseluruhan.',
+              `Didirikan sejak ${year} dengan dukungan ${team}, menjamin kualitas standar produksi usaha.`,
           },
           {
-            header: 'Kolom Kanan',
+            header: 'Skema Kemitraan & Nilai',
             description:
-              'Penjelasan komplementer aspek kedua yang memperkuat diferensiasi dan keunggulan kompetitif.',
+              `Menawarkan margin keuntungan hingga ${margin} untuk mendukung percepatan pertumbuhan mitra.`,
           },
         ],
         imageQuery: 'business comparison strategy professional',
@@ -53,34 +160,34 @@ export function mockContentForLayout(layoutType, title, structuredData = {}) {
 
     case 'metrics_grid':
       return {
-        subtitle: 'Angka-angka utama yang mencerminkan skala dan pertumbuhan bisnis',
+        subtitle: `Angka-angka utama yang mencerminkan kinerja ${company}`,
         cards: [
-          { header: '+45% YoY', description: 'Pertumbuhan Revenue Tahunan' },
-          { header: '120+ Klien', description: 'Portofolio Aktif & Tersertifikasi' },
-          { header: 'Rp 2,4 M', description: 'Total Omzet Kumulatif' },
-          { header: '98%', description: 'Tingkat Kepuasan Pelanggan' },
+          { header: margin, description: 'Margin Keuntungan Mitra' },
+          { header: moq, description: 'Minimum Order Quantity (MOQ)' },
+          { header: revenue, description: 'Target / Capaian Omzet' },
+          { header: investment, description: 'Proyeksi / Kebutuhan Modal' },
         ],
       };
 
     case 'card_grid':
       return {
-        subtitle: 'Rangkuman produk, layanan, atau unit bisnis unggulan',
+        subtitle: `Rangkuman keunggulan produk dan unit bisnis ${company}`,
         cards: [
           {
-            header: 'Produk / Layanan 1',
-            description: 'Deskripsi singkat fitur utama dan nilai tambah yang ditawarkan kepada pelanggan.',
+            header: 'Standar Mutu & Kualitas',
+            description: `Diproduksi secara terukur untuk memenuhi ekspektasi ${target}.`,
           },
           {
-            header: 'Produk / Layanan 2',
-            description: 'Keunggulan kompetitif dan spesifikasi teknis yang membedakan dari kompetitor.',
+            header: 'Diferensiasi Produk',
+            description: 'Memiliki keunggulan kompetitif unik yang membedakan dari pesaing pasar.',
           },
           {
-            header: 'Produk / Layanan 3',
-            description: 'Target segmen pasar dan hasil nyata yang dicapai oleh pengguna awal.',
+            header: 'Skala & Kapasitas',
+            description: `Mampu melayani order dengan MOQ mulai dari ${moq} secara konsisten.`,
           },
           {
-            header: 'Produk / Layanan 4',
-            description: 'Rencana pengembangan dan roadmap ekspansi ke segmen pasar baru.',
+            header: 'Prospek Pertumbuhan',
+            description: `Diproyeksikan menghasilkan potensi profit bulanan hingga ${profit}.`,
           },
         ],
         imageQuery: 'premium product showcase business',
@@ -88,18 +195,18 @@ export function mockContentForLayout(layoutType, title, structuredData = {}) {
 
     case 'contact_closing':
       return {
-        subtitle: 'Hubungi kami untuk kemitraan, pemesanan, atau informasi lebih lanjut',
+        subtitle: `Hubungi tim ${company} untuk kemitraan, pemesanan, atau informasi lebih lanjut`,
         cards: [
-          { header: 'Email', description: 'hello@pitchku.id' },
-          { header: 'Telepon / WhatsApp', description: '+62 812-xxxx-xxxx' },
-          { header: 'Website', description: 'www.pitchku.id' },
-          { header: 'Alamat', description: 'Jakarta Selatan, DKI Jakarta, Indonesia' },
+          { header: 'Email Usaha', description: 'kontak@usahamitra.id' },
+          { header: 'Telepon / WhatsApp', description: '+62 812-3456-7890' },
+          { header: 'Target Mitra', description: target },
+          { header: 'Kebutuhan Investasi', description: investment },
         ],
       };
 
     default:
       return {
-        subtitle: 'Isi konten slide di sini',
+        subtitle: `Isi konten slide di sini — ${company}`,
         bullets: ['Poin utama pertama', 'Poin utama kedua', 'Poin utama ketiga'],
       };
   }
@@ -123,11 +230,14 @@ export function generateDeckPayload(project, confirmedOutline) {
     project?.title ||
     'Usaha Anda';
 
+  const templateId = project?.template || 'company_profile';
+
   const slides = confirmedOutline.map((outlineItem, idx) => {
     const mockContent = mockContentForLayout(
       outlineItem.layoutType,
       outlineItem.title,
-      project.structuredData
+      project?.structuredData || {},
+      templateId
     );
 
     return {

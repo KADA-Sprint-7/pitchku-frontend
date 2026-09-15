@@ -593,22 +593,71 @@ export default function ExportPresentationModal({
     return pptSlide;
   };
 
-  // ── Main PPTX Generator — Menggunakan Backend API Endpoint ──────────────────
+  // ── Main PPTX Generator — Menggunakan Backend API Endpoint + Client Fallback pptxgenjs ──
   const generatePPTX = async (trimmedName) => {
     if (!deckPayload) {
       throw new Error('Tidak ada data deck untuk diekspor.');
     }
 
-    // Panggil endpoint backend POST /api/export/pptx
-    const res = await exportPptxApi(deckPayload, trimmedName);
-
-    if (res && (res.success || res.downloadUrl)) {
-      if (onExportSuccess) onExportSuccess();
-      return;
+    // 1. Coba ekspor via backend API
+    try {
+      const res = await exportPptxApi(deckPayload, trimmedName);
+      if (res && (res.success || res.downloadUrl)) {
+        if (onExportSuccess) onExportSuccess();
+        return;
+      }
+    } catch (apiErr) {
+      console.warn('[Export PPTX] Backend API error/offline. Menggunakan client-side pptxgenjs fallback:', apiErr.message);
     }
 
-    // Jika endpoint mengembalikan respon tidak dikenali, lempar error
-    throw new Error('Server gagal menghasilkan file PPTX. Silakan coba lagi.');
+    // 2. Client-side Fallback pptxgenjs generator
+    const pptx = new pptxgen();
+    pptx.layout = 'LAYOUT_16x9';
+    pptx.author = 'PitchKu AI';
+    pptx.title = trimmedName;
+
+    const brandKit = deckPayload.brandKit || {};
+    const logoUrl = brandKit.logoUrl;
+
+    // Convert logo url to data url if blob/http
+    let logoDataUrl = null;
+    let logoDim = null;
+    if (logoUrl) {
+      try {
+        logoDataUrl = await urlToDataUrl(logoUrl);
+        logoDim = await getImageNaturalDimensions(logoUrl);
+      } catch {
+        /* skip */
+      }
+    }
+
+    const slides = deckPayload.slides || [];
+    for (let idx = 0; idx < slides.length; idx++) {
+      const slide = slides[idx];
+      let slideImageDataUrl = null;
+      if (slide.imageUrl) {
+        try {
+          slideImageDataUrl = await urlToDataUrl(slide.imageUrl);
+        } catch {
+          /* skip */
+        }
+      }
+
+      buildPptxSlide(
+        pptx,
+        slide,
+        brandKit,
+        idx + 1,
+        slides.length,
+        deckTitle,
+        logoDim,
+        logoDataUrl,
+        slideImageDataUrl
+      );
+    }
+
+    await pptx.writeFile({ fileName: `${trimmedName}.pptx` });
+    if (onExportSuccess) onExportSuccess();
   };
 
 
@@ -619,7 +668,7 @@ export default function ExportPresentationModal({
       throw new Error('Tidak ada slide untuk diekspor.');
     }
 
-    // Ensure all web fonts are completely loaded before capturing
+    // Pastikan seluruh web font (Inter / Plus Jakarta Sans) ter-load sempurna sebelum snapshot
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
     }
@@ -638,7 +687,9 @@ export default function ExportPresentationModal({
         logging: false,
         width: 960,
         height: 540,
-        onclone: sanitizeClonedDoc,
+        onclone: (clonedDoc) => {
+          sanitizeClonedDoc(clonedDoc);
+        },
       });
 
       const imgData = canvas.toDataURL('image/png');

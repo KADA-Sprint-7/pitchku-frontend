@@ -84,7 +84,7 @@ function InlineField({
         'cursor-text hover:bg-white/10 hover:ring-1 hover:ring-sky-400/50 rounded px-1 py-0.5 transition-all duration-150 relative group/hover inline-block',
         className
       )}
-      style={style}
+      style={{ color: 'inherit', ...style }}
     >
       {value || <span className="opacity-40 italic">{placeholder}</span>}
     </span>
@@ -163,7 +163,8 @@ export default function SlideLayoutRenderer({
               placeholder="Subjudul atau tagline singkat..."
               maxLength={120}
               multiline
-              className="mt-3 text-sm text-slate-300 leading-relaxed block"
+              className="mt-3 text-sm leading-relaxed block"
+              style={{ color: '#CBD5E1' }}
             />
           )}
         </div>

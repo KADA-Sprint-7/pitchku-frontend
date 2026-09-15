@@ -13,16 +13,16 @@ AI presentation generator for Indonesian SMEs (UMKM)
 
 </div>
 
-This repo is the **frontend only** — a Vite + React SPA that talks to a separate backend service over REST.
+This repo is the **frontend SPA** for **PitchKu**, built with Vite + React, Tailwind CSS v4, shadcn/ui, Supabase Auth, and REST API integration.
 
 > Looking for AI-assistant working context? See [`CLAUDE.md`](./CLAUDE.md).
-> Looking for system architecture / team split / timeline? See [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md).
+> Looking for system architecture & data contracts? See [`ARCHITECTURE.md`](./ARCHITECTURE.md).
 
 ## Getting started
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill in the real API base URL
+cp .env.example .env.local   # fill in VITE_API_BASE_URL and Supabase keys
 npm run dev
 ```
 
@@ -42,43 +42,42 @@ App runs at `http://localhost:5173` by default.
 
 | Variable | Description |
 |---|---|
-| `VITE_API_BASE_URL` | Base URL of the backend REST API |
+| `VITE_API_BASE_URL` | Base URL of the backend REST API (default: `http://localhost:8000/api`) |
 
-See `.env.example` for the template. `.env.local` is gitignored — never commit real values.
+See `.env.example` for the template. `.env.local` is gitignored.
 
 ## Project structure
 
 ```
 src/
-  components/     # shared/reusable UI (incl. shadcn-generated components)
-  hooks/          # React hooks
-  layouts/        # PublicLayout, AuthLayout, ProtectedLayout — shared page shells
-  pages/          # one file per route
-  lib/            # API client, constants, helpers
-  services/       # API service
+  components/     # shared UI, page-specific subcomponents, SlideEditor, Wizard, Outline, LoginPage, RegisterPage
+  context/        # AuthContext.jsx
+  hooks/          # React custom hooks (usePageTitle)
+  layouts/        # PublicLayout, AuthLayout
+  pages/          # DashboardPage, EditorPage, FAQPage, LandingPage, LoginPage, NotFoundPage, OutlinePage, RegisterPage, TermsPage, WizardPage
+  lib/            # api.js, aiService.js, colorUtils.js, deckPayloadGenerator.js, mockOutlineGenerator.js, projectStore.js, supabase.js, utils.js
   App.jsx         # route map
   main.jsx        # entry point, router provider
-  index.css       # Tailwind import + minimal global resets
-docs/
-  ARCHITECTURE.md # system design, team ownership, timeline
+  index.css       # Tailwind import + theme definitions
 ```
 
 ## Routes
 
-| Path | Layout | Page | Access |
+| Path | Layout | Page | Description |
 |---|---|---|---|
-| `/` | PublicLayout | Landing | Public |
-| `/faq` | PublicLayout | FAQ | Public |
-| `/login` | AuthLayout | Login | Public |
-| `/register` | AuthLayout | Register | Public |
-| `/dashboard` | ProtectedLayout | Dashboard | Authenticated |
-| `/new` | ProtectedLayout | Wizard (template + business form) | Authenticated |
-| `/outline/:projectId` | ProtectedLayout | Outline review | Authenticated |
-| `/editor/:projectId` | ProtectedLayout | Slide editor + export | Authenticated |
-| `*` | — | 404 | Public |
+| `/` | PublicLayout | Landing | Hero, Keunggulan, Cara Kerja, Pilihan Templat, CTA, Footer |
+| `/faq` | PublicLayout | FAQ | Interactive accordion covering UMKM Q&As |
+| `/terms` | None | Terms | Standalone legal & data privacy terms |
+| `/login` | AuthLayout | Login | Email/password login, Google OAuth, and **Forgot Password modal** |
+| `/register` | AuthLayout | Register | User registration with full_name & company_name |
+| `/dashboard` | AppSidebar | Dashboard | Metrics, search, filter tabs, project grid, delete project |
+| `/new` | AppSidebar | Wizard | Step 1 Template selector + AI diagnose, Step 2 Business context & Brand Kit |
+| `/outline/:projectId` | AppSidebar | Outline | AI outline review, title editing, reordering, layout badges |
+| `/editor/:projectId` | AppSidebar | Slide Editor | 16:9 canvas, 6 canonical layouts, inline edit, image picker, PPTX & PDF export |
+| `*` | None | 404 | Not Found screen |
 
-Protected routes and their auth-guard logic are not yet implemented — see open items below.
+## Backend & API Integration
 
-## Backend
-
-Auth, LLM pipeline, PPTX/PDF export, storage, and logging all live in a **separate backend repo**, consumed here purely via REST (`VITE_API_BASE_URL`). This frontend does not talk to Supabase or any provider directly — see `CLAUDE.md` for the full contract.
+- **Auth:** Client-side Supabase Auth (`src/lib/supabase.js`).
+- **REST Endpoints:** Consumed via `fetchApi` wrapper in `src/lib/api.js` (`POST /api/generate/diagnose`, `POST /api/generate/outline`, `POST /api/generate/slides`, `POST /api/export/pptx`).
+- **Export Fallback:** Client-side `pptxgenjs` engine guarantees valid `.pptx` downloads with BrandKit logo & images even when backend is offline.

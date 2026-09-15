@@ -1,8 +1,16 @@
 import { useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useAuth } from "@/context/AuthContext"
+import { supabase } from "@/lib/supabase"
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import {
   Shield,
   Lock,
@@ -10,6 +18,8 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
+  KeyRound,
+  CheckCircle2,
 } from "lucide-react"
 
 function LoginForm() {
@@ -21,6 +31,12 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [remember, setRemember] = useState(false)
   const [error, setError] = useState("")
+
+  // State Lupa Kata Sandi Modal
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetSuccess, setResetSuccess] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -45,6 +61,34 @@ function LoginForm() {
     }
   }
 
+  const handleOpenForgotModal = () => {
+    setResetEmail(email || "")
+    setResetSuccess(false)
+    setIsForgotOpen(true)
+  }
+
+  const handleSendResetEmail = async (e) => {
+    e.preventDefault()
+    if (!resetEmail) {
+      toast.error('Masukkan email usaha Anda terlebih dahulu.')
+      return
+    }
+
+    try {
+      setResetLoading(true)
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/login`,
+      })
+      if (resetError) throw resetError
+
+      setResetSuccess(true)
+      toast.success('Tautan reset password berhasil dikirim!')
+    } catch (err) {
+      toast.error(err.message || 'Gagal mengirim instruksi reset password.')
+    } finally {
+      setResetLoading(false)
+    }
+  }
 
   return (
     <>
@@ -56,7 +100,7 @@ function LoginForm() {
         type="button"
         onClick={handleGoogleLogin}
         disabled={loading}
-        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800/60 text-white text-sm font-medium hover:bg-slate-700/60 transition-colors mb-5 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full flex items-center justify-center gap-3 py-2.5 rounded-lg border border-slate-700 bg-slate-800/60 text-white text-sm font-medium hover:bg-slate-700/60 transition-colors mb-5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
       >
         <svg className="w-5 h-5" viewBox="0 0 48 48">
           <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.6 32.4 29.2 35 24 35c-6.1 0-11-4.9-11-11s4.9-11 11-11c2.8 0 5.3 1 7.2 2.7l5.7-5.7C33.4 7.1 28.9 5 24 5 12.9 5 4 13.9 4 25s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.6-.4-3.9z" />
@@ -107,7 +151,7 @@ function LoginForm() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 cursor-pointer"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -124,7 +168,11 @@ function LoginForm() {
             />
             <span className="text-sm text-slate-400">Ingat saya di perangkat ini</span>
           </label>
-          <button type="button" className="text-sm text-amber-400 hover:underline">
+          <button
+            type="button"
+            onClick={handleOpenForgotModal}
+            className="text-sm text-amber-400 hover:underline font-medium cursor-pointer"
+          >
             Lupa Kata Sandi?
           </button>
         </div>
@@ -132,7 +180,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? "Memproses..." : "Masuk ke Dasbor PitchKu"} <ArrowRight className="w-4 h-4" />
         </button>
@@ -149,6 +197,74 @@ function LoginForm() {
         <Shield className="w-3.5 h-3.5" />
         <span>Dilindungi Enkripsi Supabase Auth 256-bit &amp; SSL TLS</span>
       </div>
+
+      {/* ── Modal Lupa Kata Sandi (Forgot Password) ── */}
+      <Dialog open={isForgotOpen} onOpenChange={setIsForgotOpen}>
+        <DialogContent className="sm:max-w-md bg-[#0D1525] border border-slate-700/60 text-slate-100 shadow-2xl">
+          <DialogHeader className="pb-1">
+            <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-amber-400" />
+              Reset Kata Sandi Akun
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-sm">
+              Masukkan alamat email resmi akun PitchKu Anda. Tautan untuk mengatur ulang kata sandi akan dikirim langsung ke email Anda.
+            </DialogDescription>
+          </DialogHeader>
+
+          {resetSuccess ? (
+            <div className="py-6 flex flex-col items-center text-center space-y-3">
+              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <CheckCircle2 className="w-7 h-7" />
+              </div>
+              <h3 className="text-base font-bold text-white">Email Reset Terkirim!</h3>
+              <p className="text-slate-300 text-xs leading-relaxed max-w-xs">
+                Periksa kotak masuk (atau folder spam) di <strong className="text-amber-400">{resetEmail}</strong> untuk melanjutkan pengaturan ulang password.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsForgotOpen(false)}
+                className="mt-4 px-5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Kembali ke Halaman Login
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSendResetEmail} className="space-y-4 py-2">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-slate-300">Email Akun</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Input
+                    type="email"
+                    required
+                    placeholder="nama@tokousaha.id"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="pl-9 h-10 bg-slate-800/60 border-slate-700/60 text-white placeholder:text-slate-600 focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsForgotOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-800 text-slate-300 text-xs font-medium cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={resetLoading}
+                  className="px-5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs cursor-pointer disabled:opacity-50"
+                >
+                  {resetLoading ? "Mengirim Tautan..." : "Kirim Tautan Reset"}
+                </button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

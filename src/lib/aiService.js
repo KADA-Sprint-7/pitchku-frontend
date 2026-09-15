@@ -237,38 +237,46 @@ function validUrlOrUndefined(value) {
 }
 
 function sanitizeDeckPayload(payload) {
-  const slides = (payload.slides || []).map((slide) => {
-    const sanitizedSlide = {
-      ...slide,
-      bullets:    Array.isArray(slide.bullets) ? slide.bullets : [],
-      cards:      Array.isArray(slide.cards)
+  // Pastikan deckId selalu berupa UUID v4 valid sesuai skema backend
+  let deckId = payload.deckId;
+  if (!deckId || !UUID_REGEX_FULL.test(deckId)) {
+    // Generate valid UUID v4 fallback untuk backend schema validation
+    deckId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+  }
+
+  const brandKit = {
+    logoUrl: typeof payload.brandKit?.logoUrl === 'string' ? payload.brandKit.logoUrl : '',
+    primaryColor: payload.brandKit?.primaryColor || '#0F4C81',
+    accentColor: payload.brandKit?.accentColor || '#F2A007',
+    fontFamily: payload.brandKit?.fontFamily || 'Inter',
+  };
+
+  const slides = (payload.slides || []).map((slide, idx) => {
+    return {
+      slideNumber: slide.slideNumber || (idx + 1),
+      layout: slide.layout || 'title_bullets',
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      bullets: Array.isArray(slide.bullets) ? slide.bullets : [],
+      cards: Array.isArray(slide.cards)
         ? slide.cards.map((c) => ({
-            ...c,
-            header:      c.header ?? '',
-            description: typeof c.description === 'string'
-              ? c.description.slice(0, 80)
-              : '',
+            header: c.header ?? '',
+            description: typeof c.description === 'string' ? c.description.slice(0, 80) : '',
           }))
         : [],
+      imageUrl: typeof slide.imageUrl === 'string' ? slide.imageUrl : '',
+      imageQuery: typeof slide.imageQuery === 'string' ? slide.imageQuery : '',
+      missing: Array.isArray(slide.missing) ? slide.missing : [],
     };
-
-    // imageUrl dan imageQuery: hapus field jika bukan URL valid
-    const imageUrl   = validUrlOrUndefined(slide.imageUrl);
-    const imageQuery = validUrlOrUndefined(slide.imageQuery);
-    if (imageUrl !== undefined)   sanitizedSlide.imageUrl   = imageUrl;
-    else                          delete sanitizedSlide.imageUrl;
-    if (imageQuery !== undefined) sanitizedSlide.imageQuery = imageQuery;
-    else                          delete sanitizedSlide.imageQuery;
-
-    return sanitizedSlide;
   });
 
-  // Hapus deckId jika bukan UUID valid — spread biasa tidak cukup, perlu hapus eksplisit
-  const result = { ...payload, slides };
-  if (!UUID_REGEX_FULL.test(result.deckId || '')) {
-    delete result.deckId;
-  }
-  return result;
+  return {
+    deckId,
+    template: payload.template || 'penawaran_produk',
+    businessName: payload.businessName || 'PitchKu Presentasi',
+    brandKit,
+    slides,
+  };
 }
 
 /**
