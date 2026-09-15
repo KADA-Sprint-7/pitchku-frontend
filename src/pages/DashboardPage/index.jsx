@@ -24,14 +24,23 @@ function DashboardPage() {
     async function loadProjects() {
       try {
         setLoading(true);
-        const data = await fetchApi("/projects");
-        if (isMounted && Array.isArray(data)) {
-          setProjects(data);
+        const res = await fetchApi("/projects");
+        if (isMounted) {
+          if (Array.isArray(res)) {
+            setProjects(res);
+          } else if (res && Array.isArray(res.data)) {
+            setProjects(res.data);
+          } else if (res && Array.isArray(res.projects)) {
+            setProjects(res.projects);
+          } else {
+            setProjects([]);
+          }
         }
       } catch (err) {
-        console.warn("Menggunakan fallback project data:", err.message);
+        console.error("Gagal mengambil proyek dari backend:", err);
         if (isMounted) {
-          setProjects(mockProjects);
+          // Hanya set empty array jika gagal request atau server offline
+          setProjects([]);
         }
       } finally {
         if (isMounted) {

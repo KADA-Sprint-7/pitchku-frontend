@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const rawBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
+const API_BASE_URL = rawBaseUrl.replace(/\/+$/, '')
 
 export async function fetchApi(endpoint, options = {}) {
   // Ambil token aktif saat ini (Supabase auto-refresh jika expired)
@@ -13,7 +14,8 @@ export async function fetchApi(endpoint, options = {}) {
     ...options.headers,
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const response = await fetch(`${API_BASE_URL}${cleanEndpoint}`, {
     ...options,
     headers,
   })
