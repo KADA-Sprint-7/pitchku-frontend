@@ -112,7 +112,7 @@ function Navbar() {
         </div>
 
         <Button className="hidden font-semibold p-5 md:inline-flex">
-          <Link to="/register">Mulai Buat Slide</Link>
+          <Link to="/login">Mulai Buat Slide</Link>
         </Button>
 
         {/* Mobile menu toggle */}

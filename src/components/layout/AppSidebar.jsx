@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { FolderKanban, LayoutTemplate, Settings, LogOut } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
   {
@@ -20,6 +21,7 @@ const navItems = [
 export default function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const popoverRef = useRef(null);
 
@@ -34,10 +36,36 @@ export default function AppSidebar() {
     return () => document.removeEventListener("mousedown", handleOutside);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setProfileOpen(false);
+    try {
+      if (logout) await logout();
+    } catch {
+      // ignore
+    }
     navigate("/");
   };
+
+  // User display metadata & initials
+  const displayName = useMemo(() => {
+    return (
+      user?.user_metadata?.full_name ||
+      user?.user_metadata?.company_name ||
+      user?.email?.split("@")[0] ||
+      "Pengguna"
+    );
+  }, [user]);
+
+  const userEmail = user?.email || "user@pitchku.id";
+
+  const initials = useMemo(() => {
+    if (!displayName) return "PK";
+    const parts = displayName.trim().split(/\s+/);
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }, [displayName]);
 
   return (
     <aside className="w-[72px] shrink-0 flex flex-col items-center justify-between border-r border-white/[0.06] bg-[#0b1326] sticky top-0 h-screen select-none z-40">
@@ -81,14 +109,14 @@ export default function AppSidebar() {
       <div className="relative w-full px-2 pb-4" ref={popoverRef}>
         {/* Popover */}
         {profileOpen && (
-          <div className="absolute bottom-full left-full z-50 mb-2 ml-3 w-52 overflow-hidden rounded-2xl border border-white/10 bg-[#131B2E] shadow-2xl shadow-black/60 animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="absolute bottom-full left-full z-50 mb-2 ml-3 w-56 overflow-hidden rounded-2xl border border-white/10 bg-[#131B2E] shadow-2xl shadow-black/60 animate-in fade-in slide-in-from-bottom-2 duration-150">
             {/* User info header */}
             <div className="border-b border-white/[0.06] px-4 py-3">
               <p className="truncate text-xs font-semibold text-white">
-                Kopi Nusantara
+                {displayName}
               </p>
               <p className="truncate text-[11px] text-slate-400">
-                founder@kopinusantara.id
+                {userEmail}
               </p>
             </div>
 
@@ -132,11 +160,13 @@ export default function AppSidebar() {
           {/* Avatar circle */}
           <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 p-[2px] shadow-md shadow-amber-500/10">
             <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
-              <span className="text-[11px] font-bold text-amber-400 leading-none">KN</span>
+              <span className="text-[11px] font-bold text-amber-400 leading-none">
+                {initials}
+              </span>
             </div>
           </div>
         </button>
       </div>
-    </aside >
+    </aside>
   );
 }
