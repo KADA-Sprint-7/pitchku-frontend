@@ -117,6 +117,12 @@ export function mockContentForLayout(layoutType, title, structuredData = {}) {
  * @returns {Object} PitchKuDeckPayload
  */
 export function generateDeckPayload(project, confirmedOutline) {
+  const businessName =
+    project?.structuredData?.companyName ||
+    project?.structuredData?.productName ||
+    project?.title ||
+    'Usaha Anda';
+
   const slides = confirmedOutline.map((outlineItem, idx) => {
     const mockContent = mockContentForLayout(
       outlineItem.layoutType,
@@ -133,12 +139,14 @@ export function generateDeckPayload(project, confirmedOutline) {
       cards: mockContent.cards || null,
       imageUrl: null, // Will be resolved later by image search / upload
       imageQuery: mockContent.imageQuery || null,
+      missing: [],
     };
   });
 
   return {
     deckId: project.id,
     template: project.template || 'company_profile',
+    businessName,
     brandKit: {
       logoUrl: project.brandKit?.logoUrl || null,
       primaryColor: project.brandKit?.primaryColor || '#0F4C81',

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import ProjectCard from "./ProjectCard";
 import { Button } from "@/components/ui/button";
 
-export default function ProjectGrid({ projects }) {
+export default function ProjectGrid({ projects, onDelete, onStatusChange }) {
   if (!projects || projects.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center rounded-2xl bg-[#131B2E] border border-slate-800/80 my-4">
@@ -29,8 +29,14 @@ export default function ProjectGrid({ projects }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+        />
       ))}
     </div>
   );
 }
+

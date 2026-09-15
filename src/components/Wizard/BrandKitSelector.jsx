@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,40 +11,63 @@ import {
 } from '@/components/ui/select';
 import { Palette, Upload, Image as ImageIcon, Type, Sparkles, Check, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getBrandKitApi, saveBrandKitApi } from '@/lib/aiService';
 
-// 4 Preset tema siap pakai
+// Preset tema warna Flat siap pakai (Desain Flat Modern & Kontras Tinggi)
 export const COLOR_PRESETS = [
   {
-    id: 'corporate_classic',
-    name: 'Corporate Classic',
+    id: 'flat_classic_blue',
+    name: 'Flat Classic Amber',
     primary: '#0F4C81',
-    primaryLabel: 'Deep Blue',
+    primaryLabel: 'Solid Blue',
     accent: '#F2A007',
-    accentLabel: 'Amber Gold',
+    accentLabel: 'Solid Amber',
+    description: 'Kontras solid profesional',
   },
   {
-    id: 'emerald_growth',
-    name: 'Emerald Growth',
+    id: 'flat_emerald',
+    name: 'Flat Emerald Mint',
     primary: '#064E3B',
-    primaryLabel: 'Forest Green',
+    primaryLabel: 'Forest Solid',
     accent: '#10B981',
-    accentLabel: 'Emerald',
+    accentLabel: 'Emerald Flat',
+    description: 'Segar & pertumbuhan bisnis',
   },
   {
-    id: 'modern_sunset',
-    name: 'Modern Sunset',
+    id: 'flat_sunset',
+    name: 'Flat Rose Tangerine',
     primary: '#831843',
-    primaryLabel: 'Deep Rose',
+    primaryLabel: 'Solid Berry',
     accent: '#F97316',
-    accentLabel: 'Vibrant Orange',
+    accentLabel: 'Solid Orange',
+    description: 'Kreatif & dinamis flat',
   },
   {
-    id: 'tech_monochrome',
-    name: 'Tech Navy',
+    id: 'flat_navy_cyan',
+    name: 'Flat Tech Cyan',
     primary: '#0F172A',
-    primaryLabel: 'Slate Navy',
-    accent: '#38BDF8',
-    accentLabel: 'Sky Blue',
+    primaryLabel: 'Deep Slate',
+    accent: '#06B6D4',
+    accentLabel: 'Vibrant Cyan',
+    description: 'Teknologi modern flat',
+  },
+  {
+    id: 'flat_purple_indigo',
+    name: 'Flat Electric Indigo',
+    primary: '#312E81',
+    primaryLabel: 'Deep Indigo',
+    accent: '#818CF8',
+    accentLabel: 'Indigo Light',
+    description: 'Elegan & premium flat',
+  },
+  {
+    id: 'flat_coral_slate',
+    name: 'Flat Coral Dark',
+    primary: '#1E293B',
+    primaryLabel: 'Dark Slate',
+    accent: '#FB7185',
+    accentLabel: 'Coral Rose',
+    description: 'Modern bold flat',
   },
 ];
 
@@ -60,6 +83,31 @@ const HEX_REGEX = /^#([A-Fa-f0-9]{6})$/;
 
 export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
   const fileInputRef = useRef(null);
+
+  // Ambil Brand Kit tersimpan dari backend jika ada
+  useEffect(() => {
+    let isMounted = true;
+    async function loadSavedBrandKit() {
+      try {
+        const saved = await getBrandKitApi();
+        if (isMounted && saved && (saved.primaryColor || saved.accentColor)) {
+          onBrandKitChange((prev) => ({
+            ...prev,
+            primaryColor: saved.primaryColor || prev.primaryColor,
+            accentColor: saved.accentColor || prev.accentColor,
+            fontFamily: saved.fontFamily || prev.fontFamily,
+            logoUrl: saved.logoUrl || prev.logoUrl,
+          }));
+        }
+      } catch (err) {
+        console.warn('Gagal ambil brand kit default:', err);
+      }
+    }
+    loadSavedBrandKit();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const primaryValid = HEX_REGEX.test(brandKit.primaryColor || '');
   const accentValid = HEX_REGEX.test(brandKit.accentColor || '');
@@ -195,17 +243,17 @@ export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
           )}
         </div>
 
-        {/* ── 2. Preset Tema Warna ─────────────────────────────────── */}
+        {/* ── 2. Preset Tema Warna Flat ───────────────────────────── */}
         <div className="space-y-3 pt-2 border-t border-slate-800/60">
           <div className="flex items-center justify-between">
             <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Preset Tema Cepat
+              Preset Tema Flat Solid
             </label>
-            <span className="text-[11px] text-slate-500">4 Pilihan Harmonis</span>
+            <span className="text-[11px] text-slate-500">6 Tema Flat Kontras Tinggi</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {COLOR_PRESETS.map((preset) => {
               const isSelected =
                 brandKit.primaryColor?.toLowerCase() === preset.primary.toLowerCase() &&

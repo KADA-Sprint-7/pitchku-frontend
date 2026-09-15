@@ -21,6 +21,12 @@ function saveAllProjects(projects) {
 }
 
 export const projectStore = {
+  // Ambil semua proyek lokal dalam bentuk array
+  getAllProjectsList: () => {
+    const all = getAllProjects();
+    return Object.values(all).sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+  },
+
   // Buat proyek draf baru dari alur Wizard
   createProjectDraft: ({
     template = 'company_profile',
@@ -145,7 +151,22 @@ export const projectStore = {
     const all = getAllProjects();
     if (all[projectId]) {
       all[projectId].deckPayload = deckPayload;
-      all[projectId].status = 'editing';
+      // Jangan reset status jika sudah 'selesai'
+      if (all[projectId].status !== 'selesai') {
+        all[projectId].status = 'draft';
+      }
+      all[projectId].updatedAt = new Date().toISOString();
+      saveAllProjects(all);
+      return all[projectId];
+    }
+    return null;
+  },
+
+  // Update status proyek (e.g. 'draft' | 'selesai')
+  updateProjectStatus: (projectId, status) => {
+    const all = getAllProjects();
+    if (all[projectId]) {
+      all[projectId].status = status;
       all[projectId].updatedAt = new Date().toISOString();
       saveAllProjects(all);
       return all[projectId];
@@ -186,5 +207,16 @@ export const projectStore = {
       return all[projectId];
     }
     return null;
+  },
+
+  // Hapus proyek dari local store
+  deleteProject: (projectId) => {
+    const all = getAllProjects();
+    if (all[projectId]) {
+      delete all[projectId];
+      saveAllProjects(all);
+      return true;
+    }
+    return false;
   },
 };

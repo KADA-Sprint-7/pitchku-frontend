@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import AppSidebar from "@/components/layout/AppSidebar";
 import DashboardHeader from "@/components/DashboardPage/DashboardHeader";
@@ -7,7 +7,10 @@ import DashboardFilterBar from "@/components/DashboardPage/DashboardFilterBar";
 import ProjectGrid from "@/components/DashboardPage/ProjectGrid";
 import { mockProjects, mockWorkspaceMetrics } from "@/lib/mockProjects";
 import { fetchApi } from "@/lib/api";
+import { projectStore } from "@/lib/projectStore";
+import { deleteProjectByIdApi } from "@/lib/aiService";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 function DashboardPage() {
   usePageTitle("Dasbor Proyek");
@@ -17,30 +20,61 @@ function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Fetch projects from backend
+  // Fetch projects from backend & combine with local drafts
   useEffect(() => {
     let isMounted = true;
 
     async function loadProjects() {
       try {
         setLoading(true);
-        const res = await fetchApi("/projects");
-        if (isMounted) {
+        // Ambil dari backend
+        let backendProjects = [];
+        try {
+          const res = await fetchApi("/projects");
           if (Array.isArray(res)) {
-            setProjects(res);
+            backendProjects = res;
           } else if (res && Array.isArray(res.data)) {
-            setProjects(res.data);
+            backendProjects = res.data;
           } else if (res && Array.isArray(res.projects)) {
-            setProjects(res.projects);
-          } else {
-            setProjects([]);
+            backendProjects = res.projects;
           }
+        } catch (err) {
+          console.warn("Backend /api/projects belum merespon:", err.message);
+        }
+
+        // Ambil dari projectStore (local drafts)
+        const localDrafts = projectStore.getAllProjectsList();
+
+        // Gabungkan berdasarkan ID unik (prioritaskan data terbaru)
+        const projectMap = new Map();
+
+        // 1. Masukkan data lokal
+        localDrafts.forEach((p) => {
+          projectMap.set(p.id, {
+            id: p.id,
+            title: p.title || p.deckPayload?.businessName || "Draft Presentasi",
+            templateType: p.template,
+            status: p.status === "selesai" ? "selesai" : "draft",
+            updatedAt: p.updatedAt || new Date().toISOString(),
+            slideCount: p.deckPayload?.slides?.length || p.outlines?.length || 8,
+          });
+        });
+
+        // 2. Timpa / tambahkan dari backend jika ada
+        backendProjects.forEach((p) => {
+          projectMap.set(p.id, {
+            ...p,
+            slideCount: p.slides?.length || p.slideCount || 8,
+          });
+        });
+
+        if (isMounted) {
+          setProjects(Array.from(projectMap.values()));
         }
       } catch (err) {
-        console.error("Gagal mengambil proyek dari backend:", err);
+        console.error("Gagal memuat proyek:", err);
         if (isMounted) {
-          // Hanya set empty array jika gagal request atau server offline
-          setProjects([]);
+          setProjects(projectStore.getAllProjectsList());
         }
       } finally {
         if (isMounted) {
@@ -54,6 +88,34 @@ function DashboardPage() {
     return () => {
       isMounted = false;
     };
+  }, []);
+
+  // Delete project: remove from local store + call backend, then update UI
+  const handleDeleteProject = useCallback(async (projectId) => {
+    // Optimistic UI remove
+    setProjects((prev) => prev.filter((p) => p.id !== projectId));
+    // Remove from local store
+    projectStore.deleteProject(projectId);
+    // Also attempt backend delete (fail silently)
+    try {
+      await deleteProjectByIdApi(projectId);
+    } catch (err) {
+      console.warn('[Delete Project] Backend tidak merespon:', err.message);
+    }
+    toast.success('Proyek berhasil dihapus');
+  }, []);
+
+  // Toggle project status (draft <-> selesai)
+  const handleStatusChange = useCallback((projectId, newStatus) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === projectId ? { ...p, status: newStatus } : p))
+    );
+    projectStore.updateProjectStatus(projectId, newStatus);
+    toast.success(
+      newStatus === 'selesai'
+        ? 'Proyek ditandai sebagai Selesai!'
+        : 'Status proyek diubah kembali ke Draf'
+    );
   }, []);
 
   // Calculate dynamic counts based on user projects
@@ -138,7 +200,11 @@ function DashboardPage() {
               <p className="text-sm text-slate-400">Memuat deck presentasi Anda...</p>
             </div>
           ) : (
-            <ProjectGrid projects={filteredProjects} />
+            <ProjectGrid
+              projects={filteredProjects}
+              onDelete={handleDeleteProject}
+              onStatusChange={handleStatusChange}
+            />
           )}
         </div>
       </main>

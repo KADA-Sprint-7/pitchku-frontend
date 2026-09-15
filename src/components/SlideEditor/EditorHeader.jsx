@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuth } from '@/context/AuthContext';
 
 /**
  * EditorHeader
@@ -19,15 +20,46 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
  *
  * Props:
  * - deckTitle:        string  — displayed deck title
- * - isSaving:        boolean — shows saving/saved indicator
- * - onOpenExport:    fn      — opens the export/download modal
- * - onRenameTitle:   fn(newTitle) — called when the title is confirmed
+ * - status:           string  — 'draft' | 'selesai'
+ * - onStatusToggle:   fn      — toggles project status
+ * - isSaving:         boolean — shows saving/saved indicator
+ * - onOpenExport:     fn      — opens the export/download modal
+ * - onRenameTitle:    fn(newTitle) — called when the title is confirmed
  */
-export default function EditorHeader({ deckTitle, isSaving, onOpenExport, onRenameTitle }) {
+export default function EditorHeader({
+  deckTitle,
+  status = 'draft',
+  onStatusToggle,
+  isSaving,
+  onOpenExport,
+  onRenameTitle,
+}) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [draftTitle, setDraftTitle] = useState(deckTitle);
   const inputRef = useRef(null);
+
+  const isCompleted = status === 'selesai';
+
+  // User display metadata & initials matching AppSidebar
+  const displayName = useMemo(() => {
+    return (
+      user?.user_metadata?.full_name ||
+      user?.user_metadata?.company_name ||
+      user?.email?.split('@')[0] ||
+      'Pengguna'
+    );
+  }, [user]);
+
+  const initials = useMemo(() => {
+    if (!displayName) return 'PK';
+    const parts = displayName.trim().split(/\s+/);
+    if (parts.length === 1) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }, [displayName]);
 
   // Sync external title changes
   useEffect(() => {
@@ -133,19 +165,41 @@ export default function EditorHeader({ deckTitle, isSaving, onOpenExport, onRena
           </div>
         </div>
 
-        {/* CENTER — auto-save status */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {isSaving ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
-              <span className="text-xs text-amber-400 hidden sm:block">Menyimpan...</span>
-            </>
-          ) : (
-            <>
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-xs text-emerald-400 hidden sm:block">Tersimpan otomatis</span>
-            </>
-          )}
+        {/* CENTER — auto-save status & project status */}
+        <div className="flex items-center gap-3 shrink-0">
+          {/* Status Badge Toggle */}
+          <button
+            type="button"
+            onClick={onStatusToggle}
+            title={isCompleted ? "Klik untuk ubah status ke Draf" : "Klik untuk tandai proyek Selesai"}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer hover:scale-105 select-none ${
+              isCompleted
+                ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25"
+                : "bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25"
+            }`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                isCompleted ? "bg-emerald-400" : "bg-amber-400 animate-pulse"
+              }`}
+            />
+            <span>{isCompleted ? "Selesai" : "Draf"}</span>
+          </button>
+
+          {/* Autosave status indicator */}
+          <div className="flex items-center gap-1.5 hidden md:flex">
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 text-amber-400 animate-spin" />
+                <span className="text-xs text-amber-400">Menyimpan...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs text-slate-400">Tersimpan otomatis</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* RIGHT — actions */}
@@ -182,9 +236,16 @@ export default function EditorHeader({ deckTitle, isSaving, onOpenExport, onRena
             <TooltipContent side="bottom">Layar Penuh</TooltipContent>
           </Tooltip>
 
-          {/* User Avatar */}
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-500 to-violet-600 flex items-center justify-center text-white text-xs font-bold shrink-0 select-none">
-            KN
+          {/* User Avatar with Initials matching Dashboard Sidebar */}
+          <div
+            title={displayName}
+            className="w-8 h-8 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 p-[1.5px] shadow-md shadow-amber-500/10 shrink-0 select-none"
+          >
+            <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-amber-400 leading-none">
+                {initials}
+              </span>
+            </div>
           </div>
         </div>
       </header>

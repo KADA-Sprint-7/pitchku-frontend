@@ -1,13 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Building2,
   ShoppingBag,
   Handshake,
   FileBarChart,
   Check,
+  Sparkles,
+  Loader2,
+  HelpCircle,
 } from 'lucide-react';
+import { diagnoseTemplate } from '@/lib/aiService';
+import { toast } from 'sonner';
 
 // Four standard business templates per FR-02.1
 const TEMPLATES = [
@@ -60,6 +66,31 @@ const TEMPLATES = [
 export { TEMPLATES };
 
 export default function TemplateSelector({ selectedId, onSelect }) {
+  const [needText, setNeedText] = useState('');
+  const [diagnosing, setDiagnosing] = useState(false);
+  const [diagnosisResult, setDiagnosisResult] = useState(null);
+
+  const handleDiagnose = async (e) => {
+    e?.preventDefault();
+    if (!needText.trim()) return;
+
+    try {
+      setDiagnosing(true);
+      const result = await diagnoseTemplate(needText.trim());
+      setDiagnosisResult(result);
+      if (result.recommended) {
+        onSelect(result.recommended);
+        toast.success('Rekomendasi templat ditemukan!', {
+          description: result.reason,
+        });
+      }
+    } catch {
+      toast.error('Gagal mendapatkan rekomendasi AI');
+    } finally {
+      setDiagnosing(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -72,8 +103,82 @@ export default function TemplateSelector({ selectedId, onSelect }) {
         </h1>
         <p className="text-slate-400 text-sm sm:text-base leading-relaxed max-w-2xl mx-auto">
           Mulai dengan memilih jenis template yang paling sesuai dengan kebutuhan bisnis Anda.
-          Setiap template memiliki panduan input yang berbeda.
         </p>
+      </div>
+
+      {/* AI Template Diagnosis Box */}
+      <div className="max-w-4xl mx-auto p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/30 shadow-lg">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-400/15 border border-amber-400/30 flex items-center justify-center shrink-0 text-amber-400">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div className="flex-1 space-y-3">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                Belum tahu template mana yang pas? Tanya AI PitchKu
+              </h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Cukup tulis 1 kalimat tentang apa yang sedang Anda butuhkan (contoh: <em>"aku pengen keripikku bisa masuk ke kafe-kafe"</em>).
+              </p>
+            </div>
+
+            <form onSubmit={handleDiagnose} className="flex flex-col sm:flex-row gap-2">
+              <Input
+                type="text"
+                placeholder="Tulis kebutuhanmu di sini..."
+                value={needText}
+                onChange={(e) => setNeedText(e.target.value)}
+                className="bg-slate-950/70 border-slate-700/80 text-white text-xs h-10 focus-visible:border-amber-400"
+              />
+              <Button
+                type="submit"
+                disabled={diagnosing || !needText.trim()}
+                className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs h-10 px-5 shrink-0 gap-2 disabled:opacity-50"
+              >
+                {diagnosing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Menganalisis...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Dapatkan Rekomendasi</span>
+                  </>
+                )}
+              </Button>
+            </form>
+
+            {/* AI Diagnosis Recommendation Result */}
+            {diagnosisResult && (
+              <div className="p-3.5 rounded-xl bg-slate-950/80 border border-amber-500/40 space-y-2 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">
+                    Rekomendasi AI: {diagnosisResult.recommended?.replace('_', ' ')}
+                  </span>
+                  <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full">
+                    Otomatis Dipilihkan
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  {diagnosisResult.reason}
+                </p>
+                {diagnosisResult.askFor && diagnosisResult.askFor.length > 0 && (
+                  <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                    <span className="font-semibold text-slate-300 block mb-1">
+                      Yang perlu Anda siapkan pada langkah berikutnya:
+                    </span>
+                    <ul className="list-disc list-inside space-y-0.5 text-slate-400">
+                      {diagnosisResult.askFor.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Template Cards Grid — 2x2 on md+, 1 col on mobile */}

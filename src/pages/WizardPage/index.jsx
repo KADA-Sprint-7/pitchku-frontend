@@ -9,6 +9,7 @@ import BrandKitSelector from '@/components/Wizard/BrandKitSelector';
 import WizardStepper from '@/components/Wizard/WizardStepper';
 import WizardFooterBar from '@/components/Wizard/WizardFooterBar';
 import { projectStore } from '@/lib/projectStore';
+import { generateOutlineAi } from '@/lib/aiService';
 
 const HEX_REGEX = /^#([A-Fa-f0-9]{6})$/;
 
@@ -68,36 +69,69 @@ function WizardPage() {
   const canProceedStep2 = isRawValid && isColorValid;
 
   // ── Handlers ─────────────────────────────────────────────
-  const handleNext = () => {
+  const [isGeneratingOutline, setIsGeneratingOutline] = useState(false);
+
+  const handleNext = async () => {
     if (step === 1 && canProceedStep1) {
       setStep(2);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (step === 2 && canProceedStep2) {
-      const existingProjectId = location.state?.projectId;
-      let project;
+      try {
+        setIsGeneratingOutline(true);
+        const existingProjectId = location.state?.projectId;
 
-      if (existingProjectId) {
-        project = projectStore.updateProjectData(existingProjectId, {
-          template: selectedTemplateId,
-          structuredData: formData,
-          rawContext: rawText,
-          brandKit,
+        // Siapkan input business context untuk AI Outline
+        const businessName =
+          formData.companyName ||
+          formData.productName ||
+          'Usaha Anda';
+        const audience =
+          formData.partnerTarget ||
+          formData.industry ||
+          'Calon Mitra / Klien / Investor';
+
+        toast.info('AI sedang merancang kerangka slide...', {
+          description: 'Menyesuaikan 8-10 poin topik dengan konteks bisnis Anda.',
         });
-      } else {
-        project = projectStore.createProjectDraft({
+
+        // Panggil AI Outline (dengan fallback generator otomatis)
+        const generatedOutlines = await generateOutlineAi({
           template: selectedTemplateId,
+          businessName,
+          audience,
+          brief: rawText,
           structuredData: formData,
-          rawContext: rawText,
-          brandKit,
         });
+
+        let project;
+        if (existingProjectId) {
+          project = projectStore.updateProjectData(existingProjectId, {
+            template: selectedTemplateId,
+            structuredData: formData,
+            rawContext: rawText,
+            brandKit,
+          });
+          projectStore.updateOutline(existingProjectId, generatedOutlines);
+        } else {
+          project = projectStore.createProjectDraft({
+            template: selectedTemplateId,
+            structuredData: formData,
+            rawContext: rawText,
+            brandKit,
+          });
+          projectStore.updateOutline(project.id, generatedOutlines);
+        }
+
+        toast.success('Kerangka slide berhasil dibuat!');
+        navigate(`/outline/${project?.id || existingProjectId}`);
+      } catch (err) {
+        console.error('Error saat membuat outline:', err);
+        toast.error('Gagal membuat outline', {
+          description: err.message,
+        });
+      } finally {
+        setIsGeneratingOutline(false);
       }
-
-      toast.success('Konteks bisnis & Brand Kit tersimpan!', {
-        description: 'AI sedang menyusun kerangka slide presentasi...',
-      });
-
-      // Navigate to Step 2 / Outline Review Page
-      navigate(`/outline/${project?.id || existingProjectId}`);
     }
   };
 

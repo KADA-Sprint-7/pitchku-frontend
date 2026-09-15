@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 
 import { projectStore } from '@/lib/projectStore';
 import { generateDeckPayload, mockContentForLayout } from '@/lib/deckPayloadGenerator';
+import { saveProjectDeckApi, getProjectByIdApi } from '@/lib/aiService';
 
 // SlideEditor components
 import EditorHeader from '@/components/SlideEditor/EditorHeader';
@@ -15,6 +16,7 @@ import SlideThumbnailRail from '@/components/SlideEditor/SlideThumbnailRail';
 import ExportPresentationModal from '@/components/SlideEditor/ExportPresentationModal';
 import MediaPickerModal from '@/components/SlideEditor/MediaPickerModal';
 import AddSlideModal from '@/components/SlideEditor/AddSlideModal';
+import SlideExportCanvas from '@/components/SlideEditor/SlideExportCanvas';
 
 // Auto-save debounce duration in ms
 const AUTO_SAVE_DEBOUNCE = 1000;
@@ -50,33 +52,70 @@ function EditorPage() {
   /** Add Slide modal */
   const [isAddSlideOpen, setIsAddSlideOpen] = useState(false);
 
-  // ── Load project & deck payload ────────────────────────────────────────
+  // ── Load project & deck payload (Backend API + local store fallback) ──
   useEffect(() => {
     if (!projectId) return;
 
-    const loadedProject = projectStore.getProject(projectId);
-    setProject(loadedProject);
+    let isMounted = true;
 
-    // Try to load an existing deckPayload from the store first
-    const existingPayload = projectStore.getDeckPayload(projectId);
-    if (existingPayload) {
-      setDeckPayload(existingPayload);
-    } else {
-      // Generate from confirmed outline
-      const outlines = loadedProject?.outlines || [];
-      const generatedPayload = generateDeckPayload(loadedProject, outlines);
-      setDeckPayload(generatedPayload);
-      projectStore.saveDeckPayload(projectId, generatedPayload);
+    async function loadProjectData() {
+      // 1. Coba ambil dari backend GET /api/projects/{id}
+      let serverProject = null;
+      try {
+        serverProject = await getProjectByIdApi(projectId);
+      } catch (err) {
+        console.warn('Gagal fetch project dari server:', err.message);
+      }
+
+      if (!isMounted) return;
+
+      if (serverProject && serverProject.slides) {
+        setProject({
+          id: serverProject.deckId || projectId,
+          title: serverProject.businessName || 'Pitch Deck',
+          template: serverProject.template,
+          brandKit: serverProject.brandKit,
+          status: serverProject.status || 'draft',
+        });
+        setDeckPayload(serverProject);
+        projectStore.saveDeckPayload(projectId, serverProject);
+        return;
+      }
+
+      // 2. Ambil dari local store jika server offline / data baru
+      const loadedProject = projectStore.getProject(projectId);
+      setProject(loadedProject);
+
+      const existingPayload = projectStore.getDeckPayload(projectId);
+      if (existingPayload) {
+        setDeckPayload(existingPayload);
+      } else {
+        const outlines = loadedProject?.outlines || [];
+        const generatedPayload = generateDeckPayload(loadedProject, outlines);
+        setDeckPayload(generatedPayload);
+        projectStore.saveDeckPayload(projectId, generatedPayload);
+      }
     }
+
+    loadProjectData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [projectId]);
 
-  // ── Auto-save (debounced) ──────────────────────────────────────────────
+  // ── Auto-save (debounced & synced to backend) ─────────────────────────
   const persistPayload = useCallback(
     (payload) => {
       if (!projectId || !payload) return;
       setIsSaving(true);
-      const timer = setTimeout(() => {
+      const timer = setTimeout(async () => {
         projectStore.saveDeckPayload(projectId, payload);
+        try {
+          await saveProjectDeckApi(payload);
+        } catch (err) {
+          console.warn('Gagal autosave ke backend:', err);
+        }
         setIsSaving(false);
       }, AUTO_SAVE_DEBOUNCE);
       return () => clearTimeout(timer);
@@ -262,6 +301,27 @@ function EditorPage() {
     [projectId]
   );
 
+  // ── Toggle Status Project (Draft <-> Selesai) ───────────────────────
+  const handleStatusToggle = useCallback(() => {
+    if (!project || !projectId) return;
+    const newStatus = project.status === 'selesai' ? 'draft' : 'selesai';
+    setProject((prev) => ({ ...prev, status: newStatus }));
+    projectStore.updateProjectStatus(projectId, newStatus);
+    toast.success(
+      newStatus === 'selesai'
+        ? 'Status proyek ditandai sebagai Selesai!'
+        : 'Status proyek diubah kembali ke Draf'
+    );
+  }, [project, projectId]);
+
+  // Callback saat ekspor berhasil (otomatis tandai selesai jika belum)
+  const handleExportSuccess = useCallback(() => {
+    if (project && projectId && project.status !== 'selesai') {
+      setProject((prev) => ({ ...prev, status: 'selesai' }));
+      projectStore.updateProjectStatus(projectId, 'selesai');
+    }
+  }, [project, projectId]);
+
   // ── Loading state ──────────────────────────────────────────────────────
   if (!project || !deckPayload) {
     return (
@@ -287,6 +347,8 @@ function EditorPage() {
       {/* ── Top Navigation Bar ── */}
       <EditorHeader
         deckTitle={project.title}
+        status={project.status || 'draft'}
+        onStatusToggle={handleStatusToggle}
         isSaving={isSaving}
         onOpenExport={() => setIsExportOpen(true)}
         onRenameTitle={handleRenameTitle}
@@ -345,6 +407,7 @@ function EditorPage() {
         onOpenChange={setIsExportOpen}
         deckTitle={project.title}
         deckPayload={deckPayload}
+        onExportSuccess={handleExportSuccess}
       />
 
       {/* ── Media & Image Picker Modal ── */}
@@ -353,6 +416,9 @@ function EditorPage() {
         onOpenChange={setIsMediaPickerOpen}
         onSelectImage={handleSelectImage}
       />
+
+      {/* ── Hidden High-Res Canvas Container for 1:1 PPTX / PDF Export ── */}
+      <SlideExportCanvas deckPayload={deckPayload} deckTitle={project.title} />
     </div>
   );
 }

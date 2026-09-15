@@ -1,6 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { ImageOff, Image as ImageIcon } from 'lucide-react';
+import { hexToRgba } from '@/lib/colorUtils';
 
 /**
  * InlineField — a contenteditable-like input that sits inline on the canvas.
@@ -93,6 +94,17 @@ function InlineField({
 /**
  * SlideLayoutRenderer
  * Renders 6 canonical layouts with Brand Kit styling, real-time character counting, and media picker modal triggers.
+ *
+ * NOTE ON SIZING: This renderer targets a fixed 960x540 "paper" canvas — both in
+ * the editor (SlideCanvas, scaled visually via `transform: scale()`) and in
+ * export (SlideExportCanvas, always literally 960px wide). Because of that,
+ * NO Tailwind responsive breakpoints (sm:, md:, etc.) are used anywhere below.
+ * Those breakpoints react to the browser viewport width, not this container's
+ * width, so on a narrow browser window the editor would silently drop to the
+ * un-prefixed (smaller) size while export — always 960px — would keep the
+ * sm: (larger) size. That mismatch was the source of editor vs export drift.
+ * All sizes here are fixed and chosen to match what export was already
+ * rendering (i.e. the previous sm: values), so visuals don't shift.
  */
 export default function SlideLayoutRenderer({
   slide,
@@ -124,26 +136,13 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'title_slide') {
     return (
       <div
-        className="w-full h-full flex relative overflow-hidden select-none"
+        className="w-full h-full flex relative overflow-hidden select-none bg-[#070C15]"
         style={{ fontFamily }}
       >
-        {/* Background gradient with Brand Kit primary */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(135deg, ${primary}ee 0%, #050A14 65%, #050A14 100%)`,
-          }}
-        />
-        {/* Decorative circle with Brand Kit accent */}
-        <div
-          className="absolute -top-24 -right-24 w-96 h-96 rounded-full opacity-10"
-          style={{ background: accent }}
-        />
-
         {/* Content Area */}
         <div className="relative z-10 flex flex-col justify-center px-10 py-6 flex-1 max-w-[62%]">
           {/* Accent bar */}
-          <div className="w-10 h-1 rounded-full mb-4" style={{ background: accent }} />
+          <div className="w-10 h-1 rounded-full mb-4" style={{ backgroundColor: accent }} />
 
           {/* Title (Max 60 chars) */}
           <InlineField
@@ -152,7 +151,7 @@ export default function SlideLayoutRenderer({
             onChange={(v) => onFieldChange('title', v)}
             placeholder="Judul Utama Slide"
             maxLength={60}
-            className="text-2xl sm:text-3xl font-black text-white leading-tight block w-full"
+            className="text-3xl font-black text-white leading-tight block w-full"
           />
 
           {/* Subtitle (Max 120 chars) */}
@@ -164,7 +163,7 @@ export default function SlideLayoutRenderer({
               placeholder="Subjudul atau tagline singkat..."
               maxLength={120}
               multiline
-              className="mt-3 text-xs sm:text-sm text-slate-300 leading-relaxed block"
+              className="mt-3 text-sm text-slate-300 leading-relaxed block"
             />
           )}
         </div>
@@ -172,7 +171,7 @@ export default function SlideLayoutRenderer({
         {/* Right image area */}
         <div
           onClick={onImageClick}
-          className="absolute right-0 top-0 bottom-0 w-[38%] overflow-hidden cursor-pointer group/img"
+          className="absolute right-0 top-0 bottom-0 w-[38%] overflow-hidden cursor-pointer group/img border-l border-slate-800"
           title="Klik untuk ganti gambar stok / unggah foto"
         >
           {slide.imageUrl ? (
@@ -180,17 +179,17 @@ export default function SlideLayoutRenderer({
               <img
                 src={slide.imageUrl}
                 alt="Slide visual"
-                className="w-full h-full object-cover opacity-85 group-hover/img:scale-105 transition-transform duration-300"
+                className="w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-300"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#050A14] via-transparent to-black/20" />
-              <div className="absolute inset-0 bg-sky-950/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
-                <span className="text-xs font-semibold text-white bg-slate-900/90 px-3 py-1.5 rounded-full border border-sky-400 flex items-center gap-1.5 shadow-lg">
+              <div className="absolute inset-0 bg-slate-950/20" />
+              <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
+                <span className="text-xs font-semibold text-white bg-slate-900 px-3 py-1.5 rounded-full border border-sky-400 flex items-center gap-1.5 shadow-lg">
                   <ImageIcon className="w-3.5 h-3.5 text-sky-400" /> Ganti Gambar
                 </span>
               </div>
             </>
           ) : (
-            <div className="w-full h-full border-l border-dashed border-slate-700/60 bg-slate-900/30 flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-sky-300 hover:bg-slate-900/60 transition-all">
+            <div className="w-full h-full bg-[#0B1326] flex flex-col items-center justify-center gap-2 text-slate-500 hover:text-sky-300 hover:bg-slate-900 transition-all">
               <ImageOff className="w-6 h-6" />
               <span className="text-[10px] font-medium text-center leading-tight px-2">
                 Klik untuk tambah gambar
@@ -206,22 +205,18 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'title_bullets') {
     const bullets = slide.bullets || [];
     return (
-      <div className="w-full h-full flex flex-col px-10 py-5 relative" style={{ fontFamily }}>
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(160deg, #0D1829 0%, #050A14 100%)' }}
-        />
+      <div className="w-full h-full flex flex-col px-10 py-5 relative bg-[#070C15]" style={{ fontFamily }}>
         <div className="relative z-10 flex gap-6 h-full items-center">
           {/* Left content */}
           <div className="flex-1 flex flex-col justify-center min-w-0">
-            <div className="w-8 h-0.5 rounded mb-3" style={{ background: accent }} />
+            <div className="w-8 h-0.5 rounded mb-3" style={{ backgroundColor: accent }} />
             <InlineField
               {...fieldProps('title')}
               value={slide.title}
               onChange={(v) => onFieldChange('title', v)}
               placeholder="Judul Slide"
               maxLength={60}
-              className="text-xl sm:text-2xl font-bold text-white leading-snug block"
+              className="text-2xl font-bold text-white leading-snug block"
             />
             {slide.subtitle !== undefined && (
               <InlineField
@@ -235,12 +230,12 @@ export default function SlideLayoutRenderer({
             )}
 
             {/* Bullets */}
-            <ul className="mt-3.5 space-y-2">
+            <ul className="mt-3.5 space-y-2.5">
               {(bullets.length > 0 ? bullets : ['', '', '']).slice(0, 5).map((bullet, idx) => (
                 <li key={idx} className="flex items-start gap-2.5">
                   <span
                     className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0"
-                    style={{ background: accent }}
+                    style={{ backgroundColor: accent }}
                   />
                   <InlineField
                     {...fieldProps('bullets', idx)}
@@ -258,20 +253,20 @@ export default function SlideLayoutRenderer({
           {/* Right image area */}
           <div
             onClick={onImageClick}
-            className="w-40 sm:w-48 h-[85%] rounded-xl overflow-hidden shrink-0 relative cursor-pointer group/img border border-slate-700/50 shadow-md"
+            className="w-48 h-[85%] rounded-xl overflow-hidden shrink-0 relative cursor-pointer group/img border border-slate-800 bg-[#0F1A2E]"
             title="Klik untuk ganti gambar stok / unggah foto"
           >
             {slide.imageUrl ? (
               <>
-                <img src={slide.imageUrl} alt="" className="w-full h-full object-cover opacity-85 group-hover/img:scale-105 transition-transform" />
-                <div className="absolute inset-0 bg-sky-950/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
-                  <span className="text-[10px] font-semibold text-white bg-slate-900/90 px-2 py-1 rounded-full border border-sky-400 flex items-center gap-1">
+                <img src={slide.imageUrl} alt="" className="w-full h-full object-cover group-hover/img:scale-105 transition-transform" />
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover/img:opacity-100 flex items-center justify-center transition-opacity">
+                  <span className="text-[10px] font-semibold text-white bg-slate-900 px-2 py-1 rounded-full border border-sky-400 flex items-center gap-1">
                     <ImageIcon className="w-3 h-3 text-sky-400" /> Ganti Foto
                   </span>
                 </div>
               </>
             ) : (
-              <div className="w-full h-full bg-slate-900/40 flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-sky-300 hover:bg-slate-900/80 transition-all">
+              <div className="w-full h-full bg-[#0F1A2E] flex flex-col items-center justify-center gap-1 text-slate-500 hover:text-sky-300 hover:bg-slate-900 transition-all">
                 <ImageOff className="w-5 h-5" />
                 <span className="text-[9px]">Pilih Foto</span>
               </div>
@@ -286,15 +281,11 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'two_column') {
     const cards = slide.cards || [{}, {}];
     return (
-      <div className="w-full h-full flex flex-col px-10 py-5 relative" style={{ fontFamily }}>
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(160deg, #0D1829 0%, #050A14 100%)' }}
-        />
+      <div className="w-full h-full flex flex-col px-10 py-5 relative bg-[#070C15]" style={{ fontFamily }}>
         <div className="relative z-10 flex flex-col h-full justify-center">
           {/* Title */}
           <div className="mb-3">
-            <div className="w-8 h-0.5 rounded mb-2" style={{ background: accent }} />
+            <div className="w-8 h-0.5 rounded mb-2" style={{ backgroundColor: accent }} />
             <InlineField
               {...fieldProps('title')}
               value={slide.title}
@@ -309,13 +300,13 @@ export default function SlideLayoutRenderer({
           <div className="grid grid-cols-2 gap-4">
             {[0, 1].map((colIdx) => {
               const card = cards[colIdx] || {};
+              const colBarColor = colIdx === 0 ? primary : accent;
               return (
                 <div
                   key={colIdx}
-                  className="rounded-xl p-4 flex flex-col gap-2 border border-slate-700/50 shadow-sm"
-                  style={{ background: `${primary}22` }}
+                  className="rounded-xl p-4 flex flex-col gap-2 border border-slate-800 bg-[#0F1A2E]"
                 >
-                  <div className="w-6 h-0.5 rounded" style={{ background: colIdx === 0 ? primary : accent }} />
+                  <div className="w-6 h-0.5 rounded" style={{ backgroundColor: colBarColor }} />
                   <InlineField
                     {...fieldProps('cards', colIdx * 2)}
                     value={card.header || ''}
@@ -346,14 +337,10 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'metrics_grid') {
     const cards = slide.cards || [{}, {}, {}, {}];
     return (
-      <div className="w-full h-full flex flex-col px-10 py-5 relative" style={{ fontFamily }}>
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(160deg, #0D1829 0%, #050A14 100%)' }}
-        />
+      <div className="w-full h-full flex flex-col px-10 py-5 relative bg-[#070C15]" style={{ fontFamily }}>
         <div className="relative z-10 flex flex-col h-full justify-center">
           <div className="mb-3">
-            <div className="w-8 h-0.5 rounded mb-1.5" style={{ background: accent }} />
+            <div className="w-8 h-0.5 rounded mb-1.5" style={{ backgroundColor: accent }} />
             <InlineField
               {...fieldProps('title')}
               value={slide.title}
@@ -369,20 +356,18 @@ export default function SlideLayoutRenderer({
             {[0, 1, 2, 3].map((idx) => {
               const card = cards[idx] || {};
               const isFirst = idx === 0;
+              const badgeColor = isFirst ? accent : primary;
               return (
                 <div
                   key={idx}
                   className={cn(
-                    'rounded-xl p-3.5 flex flex-col gap-0.5 border shadow-sm',
-                    isFirst ? 'border-amber-400/40' : 'border-slate-700/40'
+                    'rounded-xl p-3.5 flex flex-col gap-0.5 bg-[#0F1A2E] border',
+                    isFirst ? 'border-amber-400/60' : 'border-slate-800'
                   )}
-                  style={{
-                    background: isFirst ? `${accent}1c` : `${primary}1a`,
-                  }}
                 >
                   <div
                     className="text-[9px] font-bold tracking-widest uppercase"
-                    style={{ color: isFirst ? accent : `${primary}ee` }}
+                    style={{ color: badgeColor }}
                   >
                     {`METRIK ${idx + 1}`}
                   </div>
@@ -392,7 +377,7 @@ export default function SlideLayoutRenderer({
                     onChange={(v) => onFieldChange('cards', v, idx * 2)}
                     placeholder="+00%"
                     maxLength={30}
-                    className="text-xl sm:text-2xl font-black text-white block"
+                    className="text-2xl font-black text-white block"
                   />
                   <InlineField
                     {...fieldProps('cards', idx * 2 + 1)}
@@ -415,14 +400,10 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'card_grid') {
     const cards = slide.cards || [{}, {}, {}, {}];
     return (
-      <div className="w-full h-full flex flex-col px-10 py-5 relative" style={{ fontFamily }}>
-        <div
-          className="absolute inset-0"
-          style={{ background: 'linear-gradient(160deg, #0D1829 0%, #050A14 100%)' }}
-        />
+      <div className="w-full h-full flex flex-col px-10 py-5 relative bg-[#070C15]" style={{ fontFamily }}>
         <div className="relative z-10 flex flex-col h-full justify-center">
           <div className="mb-2.5">
-            <div className="w-8 h-0.5 rounded mb-1.5" style={{ background: accent }} />
+            <div className="w-8 h-0.5 rounded mb-1.5" style={{ backgroundColor: accent }} />
             <InlineField
               {...fieldProps('title')}
               value={slide.title}
@@ -440,10 +421,9 @@ export default function SlideLayoutRenderer({
               return (
                 <div
                   key={idx}
-                  className="rounded-xl p-3 border border-slate-700/40 flex flex-col gap-1 transition-shadow shadow-sm"
-                  style={{ background: `${primary}18` }}
+                  className="rounded-xl p-3 border border-slate-800 bg-[#0F1A2E] flex flex-col gap-1"
                 >
-                  <div className="w-4 h-0.5 rounded" style={{ background: accent }} />
+                  <div className="w-4 h-0.5 rounded" style={{ backgroundColor: accent }} />
                   <InlineField
                     {...fieldProps('cards', idx * 2)}
                     value={card.header || ''}
@@ -474,19 +454,9 @@ export default function SlideLayoutRenderer({
   if (slide.layout === 'contact_closing') {
     const cards = slide.cards || [{}, {}, {}, {}];
     return (
-      <div className="w-full h-full flex flex-col items-center justify-center px-10 py-5 relative text-center" style={{ fontFamily }}>
-        <div
-          className="absolute inset-0"
-          style={{
-            background: `linear-gradient(160deg, ${primary}cc 0%, #050A14 70%)`,
-          }}
-        />
-        <div
-          className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full opacity-10"
-          style={{ background: accent }}
-        />
+      <div className="w-full h-full flex flex-col items-center justify-center px-10 py-5 relative text-center bg-[#070C15]" style={{ fontFamily }}>
         <div className="relative z-10 w-full max-w-lg">
-          <div className="w-10 h-1 rounded-full mx-auto mb-3" style={{ background: accent }} />
+          <div className="w-10 h-1 rounded-full mx-auto mb-3" style={{ backgroundColor: accent }} />
           <InlineField
             {...fieldProps('title')}
             value={slide.title}
@@ -514,8 +484,7 @@ export default function SlideLayoutRenderer({
               return (
                 <div
                   key={idx}
-                  className="rounded-xl p-2.5 border border-slate-600/40 text-left"
-                  style={{ background: 'rgba(255,255,255,0.06)' }}
+                  className="rounded-xl p-2.5 border border-slate-800 bg-[#0F1A2E] text-left"
                 >
                   <InlineField
                     {...fieldProps('cards', idx * 2)}

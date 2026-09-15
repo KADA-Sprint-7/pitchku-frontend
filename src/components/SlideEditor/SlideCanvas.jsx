@@ -110,7 +110,7 @@ export default function SlideCanvas({
                   <img
                     src={logoUrl}
                     alt="Logo"
-                    className="h-5.5 w-auto object-contain max-w-[90px] filter drop-shadow"
+                    className="h-[22px] w-auto object-contain max-w-[90px] filter drop-shadow"
                   />
                 ) : (
                   <span className="text-[9px] font-mono tracking-widest text-slate-500 uppercase px-2 py-0.5 rounded bg-black/30 border border-slate-800">

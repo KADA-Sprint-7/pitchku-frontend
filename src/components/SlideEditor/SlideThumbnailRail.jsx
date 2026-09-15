@@ -18,23 +18,9 @@ function ThumbnailMiniCanvas({ slide, brandKit }) {
   const primary = brandKit?.primaryColor || '#0F4C81';
   const accent = brandKit?.accentColor || '#F2A007';
 
-  const layoutColors = {
-    title_slide: primary,
-    two_column: '#1e3a5f',
-    metrics_grid: '#1a2e1a',
-    card_grid: '#1f1a2e',
-    title_bullets: '#2e1a1a',
-    contact_closing: primary,
-  };
-
-  const bg = layoutColors[slide?.layout] || primary;
-
   return (
     <div
-      className="w-full h-full rounded overflow-hidden flex flex-col relative pointer-events-none select-none"
-      style={{
-        background: `linear-gradient(135deg, ${bg} 0%, #050A14 100%)`,
-      }}
+      className="w-full h-full rounded overflow-hidden flex flex-col relative pointer-events-none select-none bg-[#070C15] border border-slate-800"
     >
       {/* Accent bar */}
       <div className="w-4 h-0.5 rounded-full mt-1.5 ml-1.5" style={{ background: accent }} />

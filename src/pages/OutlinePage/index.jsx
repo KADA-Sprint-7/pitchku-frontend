@@ -6,6 +6,7 @@ import WizardStepper from '@/components/Wizard/WizardStepper';
 import OutlineReviewer from '@/components/Outline/OutlineReviewer';
 import { projectStore } from '@/lib/projectStore';
 import { generateMockOutline } from '@/lib/mockOutlineGenerator';
+import { generateSlidesAi, saveProjectDeckApi } from '@/lib/aiService';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -55,7 +56,7 @@ function OutlinePage() {
   };
 
   // Next / Submit button to editor
-  const handleProceedToEditor = () => {
+  const handleProceedToEditor = async () => {
     if (!outlineList || outlineList.length < 3) {
       toast.error('Gagal melanjutkan', {
         description: 'Minimal harus ada 3 slide dalam struktur presentasi.',
@@ -63,17 +64,58 @@ function OutlinePage() {
       return;
     }
 
-    setIsSubmitting(true);
-    projectStore.saveConfirmedOutline(projectId, outlineList);
+    try {
+      setIsSubmitting(true);
+      projectStore.saveConfirmedOutline(projectId, outlineList);
 
-    toast.success('Kerangka slide terkonfirmasi!', {
-      description: 'Menyiapkan slide canvas dan masuk ke Slide Editor...',
-    });
+      toast.info('AI sedang menyusun konten lengkap tiap slide...', {
+        description: 'Memvalidasi struktur skema dan teks konten.',
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
+      // Siapkan context untuk AI generation
+      const businessName =
+        project?.structuredData?.companyName ||
+        project?.structuredData?.productName ||
+        project?.title ||
+        'Usaha Anda';
+      const audience =
+        project?.structuredData?.partnerTarget ||
+        project?.structuredData?.industry ||
+        'Calon Mitra / Klien / Investor';
+
+      const context = {
+        template: project?.template || 'penawaran_produk',
+        businessName,
+        audience,
+        brief: project?.rawContext || '',
+      };
+
+      // 1. Generate slides (via API / Fallback)
+      const deckPayload = await generateSlidesAi({
+        context,
+        outline: outlineList,
+        project,
+      });
+
+      // 2. Simpan lokal di projectStore
+      projectStore.saveDeckPayload(projectId, deckPayload);
+
+      // 3. Sync / POST ke Backend endpoint /api/projects
+      await saveProjectDeckApi(deckPayload);
+
+      toast.success('Slide presentasi berhasil dibuat!', {
+        description: 'Membuka canvas Slide Editor PitchKu...',
+      });
+
       navigate(`/editor/${projectId}`);
-    }, 800);
+    } catch (err) {
+      console.error('Error saat membuat slides:', err);
+      toast.error('Gagal memproses slide', {
+        description: err.message,
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!project) {
