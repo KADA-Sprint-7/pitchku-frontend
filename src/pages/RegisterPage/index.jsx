@@ -1,8 +1,10 @@
-import { usePageTitle } from "@/hooks/usePageTitle"
+import { usePageTitle } from "@/hooks/usePageTitle";
+import RegisterForm from "@/components/RegisterPage/RegisterForm";
 
 function RegisterPage() {
-  usePageTitle("Register")
-  return <h1 className="text-2xl font-bold p-8">Register Page</h1>
+  usePageTitle("Daftar – PitchKu");
+
+  return <RegisterForm />;
 }
 
-export default RegisterPage
+export default RegisterPage;
