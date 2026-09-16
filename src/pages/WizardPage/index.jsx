@@ -149,6 +149,26 @@ function WizardPage() {
       setFormData({});
       setRawText('');
     }
+
+    // Auto-save draft when template is chosen
+    const existingProjectId = location.state?.projectId;
+    if (existingProjectId) {
+      projectStore.updateProjectData(existingProjectId, {
+        template: templateId,
+        structuredData: templateId !== selectedTemplateId ? {} : formData,
+        rawContext: templateId !== selectedTemplateId ? '' : rawText,
+        brandKit,
+      });
+    } else {
+      const newProj = projectStore.createProjectDraft({
+        template: templateId,
+        structuredData: {},
+        rawContext: '',
+        brandKit,
+      });
+      // Set location state so subsequent updates modify this draft
+      navigate('/new', { state: { ...location.state, projectId: newProj.id }, replace: true });
+    }
   };
 
   return (
@@ -222,7 +242,8 @@ function WizardPage() {
           step={step}
           onBack={handleBack}
           onNext={handleNext}
-          canProceed={step === 1 ? canProceedStep1 : canProceedStep2}
+          canProceed={step === 1 ? canProceedStep1 : (canProceedStep2 && !isGeneratingOutline)}
+          nextLabel={isGeneratingOutline ? 'Merancang Outline AI...' : undefined}
         />
       </div>
     </div>

@@ -5,7 +5,6 @@ import DashboardHeader from "@/components/DashboardPage/DashboardHeader";
 import DashboardMetrics from "@/components/DashboardPage/DashboardMetrics";
 import DashboardFilterBar from "@/components/DashboardPage/DashboardFilterBar";
 import ProjectGrid from "@/components/DashboardPage/ProjectGrid";
-import { mockProjects, mockWorkspaceMetrics } from "@/lib/mockProjects";
 import { fetchApi } from "@/lib/api";
 import { projectStore } from "@/lib/projectStore";
 import { deleteProjectByIdApi } from "@/lib/aiService";
@@ -50,13 +49,15 @@ function DashboardPage() {
 
         // 1. Masukkan data lokal
         localDrafts.forEach((p) => {
+          const hasPayload = !!p.deckPayload && Array.isArray(p.deckPayload.slides) && p.deckPayload.slides.length > 0;
           projectMap.set(p.id, {
             id: p.id,
-            title: p.title || p.deckPayload?.businessName || "Draft Presentasi",
+            title: p.title || p.deckPayload?.businessName || p.structuredData?.companyName || p.structuredData?.productName || "Presentasi Tanpa Judul",
             templateType: p.template,
             status: p.status === "selesai" ? "selesai" : "draft",
+            hasDeckPayload: hasPayload,
             updatedAt: p.updatedAt || new Date().toISOString(),
-            slideCount: p.deckPayload?.slides?.length || p.outlines?.length || 8,
+            slideCount: hasPayload ? p.deckPayload.slides.length : (p.outlines?.length || 0),
           });
         });
 

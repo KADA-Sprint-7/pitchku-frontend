@@ -29,7 +29,7 @@ function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [remember, setRemember] = useState(false)
+  const [remember, setRemember] = useState(true) // Supabase default: session tersimpan di localStorage
   const [error, setError] = useState("")
 
   // State Lupa Kata Sandi Modal

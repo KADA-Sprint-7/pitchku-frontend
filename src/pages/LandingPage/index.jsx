@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import HeroSection from "@/components/LandingPage/HeroSection";

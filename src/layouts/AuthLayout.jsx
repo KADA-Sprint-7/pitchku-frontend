@@ -1,4 +1,5 @@
-import { Link, useLocation, Outlet } from "react-router-dom";
+import { Link, useLocation, Outlet, Navigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 import {
   Shield,
   LogIn,
@@ -10,7 +11,13 @@ import {
 
 function AuthLayout({ children }) {
   const location = useLocation();
+  const { user } = useAuth();
   const isLoginPage = location.pathname === "/login";
+
+  // Jika sudah login dan masih ada session aktif, redirect ke dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-[#070C15] flex">

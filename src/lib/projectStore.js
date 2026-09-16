@@ -46,7 +46,7 @@ export const projectStore = {
       title:
         structuredData.companyName ||
         structuredData.productName ||
-        'Pitch Deck Usaha Baru',
+        'Presentasi Tanpa Judul',
       template,
       structuredData,
       rawContext,
@@ -126,6 +126,9 @@ export const projectStore = {
       all[projectId].structuredData = structuredData;
       all[projectId].rawContext = rawContext;
       all[projectId].brandKit = brandKit;
+      if (structuredData?.companyName || structuredData?.productName) {
+        all[projectId].title = structuredData.companyName || structuredData.productName;
+      }
       all[projectId].updatedAt = new Date().toISOString();
       saveAllProjects(all);
       return all[projectId];
@@ -151,6 +154,11 @@ export const projectStore = {
     const all = getAllProjects();
     if (all[projectId]) {
       all[projectId].deckPayload = deckPayload;
+      if (deckPayload?.businessName && deckPayload.businessName !== 'Presentasi Tanpa Judul') {
+        all[projectId].title = deckPayload.businessName;
+      } else if (all[projectId].structuredData?.companyName || all[projectId].structuredData?.productName) {
+        all[projectId].title = all[projectId].structuredData.companyName || all[projectId].structuredData.productName;
+      }
       // Jangan reset status jika sudah 'selesai'
       if (all[projectId].status !== 'selesai') {
         all[projectId].status = 'draft';

@@ -26,10 +26,14 @@ export default function ProjectCard({ project, onDelete, onStatusChange }) {
   const isCompleted = project.status === "selesai";
   const isDraft = !isCompleted;
 
-  // Route: all projects go to editor (drafts that have deck payload) or outline page
-  const hasDeckPayload = project.slideCount > 0 && project.status !== "draft_outline";
-  const actionLink = `/editor/${project.id}`;
-  const outlineLink = `/outline/${project.id}`;
+  // Route: projects with full deck payload go to editor, early drafts go to wizard step 1
+  const hasPayload = project.hasDeckPayload || (project.slideCount > 0 && project.status !== "draft");
+  const isEarlyDraft = !hasPayload;
+
+  // Route target: return early drafts to /new with step 1
+  const actionLink = isEarlyDraft
+    ? { pathname: "/new", state: { step: 1, projectId: project.id } }
+    : `/editor/${project.id}`;
 
   const templateName =
     project.templateName ||

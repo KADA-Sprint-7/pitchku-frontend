@@ -10,49 +10,41 @@ import {
 } from '@/components/ui/select';
 import { FileText, AlertCircle } from 'lucide-react';
 
-// Opsi periode laporan keuangan
-export const REPORT_PERIOD_OPTIONS = [
-  { value: 'Q1 2026 (Jan - Mar)', label: 'Q1 2026 (Jan - Mar)' },
-  { value: 'Q2 2026 (Apr - Jun)', label: 'Q2 2026 (Apr - Jun)' },
-  { value: 'Q3 2026 (Jul - Sep)', label: 'Q3 2026 (Jul - Sep)' },
-  { value: 'Q4 2026 (Okt - Des)', label: 'Q4 2026 (Okt - Des)' },
-  { value: 'Semester 1 2026', label: 'Semester 1 2026' },
-  { value: 'Semester 2 2026', label: 'Semester 2 2026' },
-  { value: 'Tahun Penuh 2025', label: 'Tahun Penuh 2025' },
-  { value: 'Bulanan / Kustom', label: 'Bulanan / Kustom' },
+// Field dasar bisnis yang SELALU muncul di semua template (wajib diisi)
+export const COMMON_BASIC_FIELDS = [
+  {
+    key: 'companyName',
+    label: 'Nama Perusahaan / Usaha',
+    fieldType: 'text',
+    placeholder: 'PT Kopi Nusantara Indonesia',
+    required: true,
+  },
+  {
+    key: 'industry',
+    label: 'Industri / Bidang Usaha',
+    fieldType: 'text',
+    placeholder: 'F&B, Agrikultur, Retail, Jasa, dll.',
+  },
+  {
+    key: 'yearFounded',
+    label: 'Tahun Berdiri',
+    fieldType: 'number',
+    placeholder: 'Contoh: 2019',
+    helperText: 'Masukkan 4 digit tahun (contoh: 2019)',
+    validate: (val) => {
+      if (!val) return null;
+      const num = Number(val);
+      if (isNaN(num) || num < 1900 || num > 2026) {
+        return 'Tahun berdiri harus antara 1900 - 2026';
+      }
+      return null;
+    },
+  },
 ];
 
 // Definisi konfigurasi field per template beserta tipe dan validator
 export const TEMPLATE_FIELDS = {
   company_profile: [
-    {
-      key: 'companyName',
-      label: 'Nama Perusahaan / Usaha',
-      fieldType: 'text',
-      placeholder: 'PT Kopi Nusantara Indonesia',
-      required: true,
-    },
-    {
-      key: 'industry',
-      label: 'Industri / Sektor',
-      fieldType: 'text',
-      placeholder: 'F&B, Agrikultur, Retail, dll.',
-    },
-    {
-      key: 'yearFounded',
-      label: 'Tahun Berdiri',
-      fieldType: 'number',
-      placeholder: 'Contoh: 2019',
-      helperText: 'Masukkan 4 digit tahun (contoh: 2019)',
-      validate: (val) => {
-        if (!val) return null;
-        const num = Number(val);
-        if (isNaN(num) || num < 1900 || num > 2026) {
-          return 'Tahun berdiri harus antara 1900 - 2026';
-        }
-        return null;
-      },
-    },
     {
       key: 'teamSize',
       label: 'Jumlah Karyawan',
@@ -160,11 +152,18 @@ export const TEMPLATE_FIELDS = {
   ],
   laporan_ringkas: [
     {
-      key: 'reportPeriod',
-      label: 'Periode Laporan',
-      fieldType: 'select',
-      placeholder: 'Pilih Periode Laporan',
-      options: REPORT_PERIOD_OPTIONS,
+      key: 'reportStartDate',
+      label: 'Tanggal Mulai Periode',
+      fieldType: 'date',
+      placeholder: 'Tanggal Mulai',
+      helperText: 'Tanggal awal periode laporan',
+    },
+    {
+      key: 'reportEndDate',
+      label: 'Tanggal Selesai Periode',
+      fieldType: 'date',
+      placeholder: 'Tanggal Selesai',
+      helperText: 'Tanggal akhir periode laporan',
     },
     {
       key: 'revenue',
@@ -215,7 +214,12 @@ export default function BusinessContextForm({
   rawText,
   onRawTextChange,
 }) {
-  const fields = TEMPLATE_FIELDS[templateId] || [];
+  // Gabungkan: common fields selalu ada, template fields mengikuti.
+  // Hindari duplikat key jika template_fields sudah punya field yang sama.
+  const templateFields = TEMPLATE_FIELDS[templateId] || [];
+  const templateFieldKeys = new Set(templateFields.map((f) => f.key));
+  const commonFields = COMMON_BASIC_FIELDS.filter((f) => !templateFieldKeys.has(f.key));
+  const fields = [...commonFields, ...templateFields];
   const rawLen = (rawText || '').length;
 
   const isRawTooShort = rawLen > 0 && rawLen < RAW_TEXT_MIN;
@@ -260,6 +264,29 @@ export default function BusinessContextForm({
             {fields.map((field) => {
               const value = formData[field.key] || '';
               const errorMsg = field.validate ? field.validate(value) : null;
+
+              if (field.fieldType === 'date') {
+                return (
+                  <div key={field.key} className="space-y-1.5">
+                    <label
+                      htmlFor={`wizard-${field.key}`}
+                      className="block text-xs font-semibold text-slate-300 uppercase tracking-wider"
+                    >
+                      {field.label}
+                    </label>
+                    <input
+                      id={`wizard-${field.key}`}
+                      type="date"
+                      value={formData[field.key] || ''}
+                      onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                      className="w-full h-10 rounded-md border border-slate-700/80 bg-slate-900/90 px-3 text-xs text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500/60 [color-scheme:dark] cursor-pointer"
+                    />
+                    {field.helperText && (
+                      <p className="text-[10px] text-slate-500 mt-1">{field.helperText}</p>
+                    )}
+                  </div>
+                );
+              }
 
               if (field.fieldType === 'select') {
                 return (

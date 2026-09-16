@@ -11,15 +11,22 @@
 // ---------------------------------------------------------------------------
 
 export function mockContentForLayout(layoutType, title, structuredData = {}, templateId = 'company_profile') {
+  // Info dasar bisnis selalu diambil dari structuredData (tersedia di semua template)
   const company = structuredData.companyName || structuredData.productName || 'Usaha Anda';
-  const moq = structuredData.moq ? `${structuredData.moq} pcs` : '100 pcs';
-  const margin = structuredData.profitMargin ? `${structuredData.profitMargin}%` : '25%';
-  const investment = structuredData.investmentValue ? `Rp ${structuredData.investmentValue}` : 'Rp 100 Juta';
-  const revenue = structuredData.revenue ? `Rp ${structuredData.revenue}` : 'Rp 250 Juta';
-  const profit = structuredData.profit ? `Rp ${structuredData.profit}` : 'Rp 65 Juta';
+  const industry = structuredData.industry || 'Bisnis Indonesia';
   const year = structuredData.yearFounded || '2021';
   const team = structuredData.teamSize ? `${structuredData.teamSize} Orang` : '10+ Tim Core';
+
+  // Info spesifik template
+  const moq = structuredData.moq ? `${structuredData.moq} pcs` : '100 pcs';
+  const margin = structuredData.margin ? `${structuredData.margin}%` : structuredData.profitMargin ? `${structuredData.profitMargin}%` : '25%';
+  const investment = structuredData.investmentValue ? `Rp ${Number(structuredData.investmentValue).toLocaleString('id-ID')}` : 'Rp 100 Juta';
+  const revenue = structuredData.revenue ? `Rp ${Number(structuredData.revenue).toLocaleString('id-ID')}` : 'Rp 250 Juta';
+  const profit = structuredData.profitLoss ? `Rp ${Number(structuredData.profitLoss).toLocaleString('id-ID')}` : structuredData.profit ? `Rp ${structuredData.profit}` : 'Rp 65 Juta';
   const target = structuredData.partnerTarget || structuredData.industry || 'Calon Mitra / Klien';
+
+  // Baris info dasar yang muncul di semua slide (untuk footer/subtitle)
+  const companyBasicInfo = `${company}${year !== '2021' ? ` · Est. ${year}` : ''}${industry ? ` · ${industry}` : ''}`;
 
   if (templateId === 'proposal_kerjasama') {
     switch (layoutType) {
@@ -100,20 +107,32 @@ export function mockContentForLayout(layoutType, title, structuredData = {}, tem
   }
 
   if (templateId === 'laporan_ringkas') {
+    // Format periode laporan dari date range input
+    const periodText = (() => {
+      const start = structuredData.reportStartDate;
+      const end = structuredData.reportEndDate;
+      if (start && end) {
+        const fmt = (d) => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+        return `${fmt(start)} s.d. ${fmt(end)}`;
+      }
+      if (start) return `Mulai ${new Date(start).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`;
+      return 'Periode Laporan';
+    })();
+
     switch (layoutType) {
       case 'title_slide':
         return {
-          subtitle: `Laporan Kinerja & Akuntabilitas Bisnis — ${company}`,
+          subtitle: `Laporan Kinerja ${company} \u2014 ${periodText}`,
           imageQuery: 'financial report charts analytics',
         };
       case 'metrics_grid':
         return {
-          subtitle: `Rangkuman Kinerja Finansial ${company}`,
+          subtitle: `Rangkuman Kinerja Finansial ${company} \u2014 ${periodText}`,
           cards: [
             { header: revenue, description: 'Total Omzet Kotor' },
             { header: profit, description: 'Laba Bersih Operasional' },
             { header: margin, description: 'Margin Keuntungan Bersih' },
-            { header: year, description: 'Tahun Awal Rekam Jejak' },
+            { header: `Est. ${year}`, description: `Industri: ${industry}` },
           ],
         };
     }
@@ -199,14 +218,14 @@ export function mockContentForLayout(layoutType, title, structuredData = {}, tem
         cards: [
           { header: 'Email Usaha', description: 'kontak@usahamitra.id' },
           { header: 'Telepon / WhatsApp', description: '+62 812-3456-7890' },
+          { header: company, description: `${industry} · Est. ${year}` },
           { header: 'Target Mitra', description: target },
-          { header: 'Kebutuhan Investasi', description: investment },
         ],
       };
 
     default:
       return {
-        subtitle: `Isi konten slide di sini — ${company}`,
+        subtitle: `Isi konten slide di sini — ${companyBasicInfo}`,
         bullets: ['Poin utama pertama', 'Poin utama kedua', 'Poin utama ketiga'],
       };
   }
@@ -228,7 +247,7 @@ export function generateDeckPayload(project, confirmedOutline) {
     project?.structuredData?.companyName ||
     project?.structuredData?.productName ||
     project?.title ||
-    'Usaha Anda';
+    'Presentasi Tanpa Judul';
 
   const templateId = project?.template || 'company_profile';
 

@@ -74,8 +74,8 @@ export function fitDimensions(naturalWidth, naturalHeight, maxWidth, maxHeight) 
   const imageAspect = naturalWidth / naturalHeight;
   const boxAspect = maxWidth / maxHeight;
 
-  let width = maxWidth;
-  let height = maxHeight;
+  let width;
+  let height;
 
   if (imageAspect > boxAspect) {
     // Image is wider than box

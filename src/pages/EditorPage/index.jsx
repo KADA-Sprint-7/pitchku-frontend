@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { usePageTitle } from '@/hooks/usePageTitle';
 import { Loader2 } from 'lucide-react';
