@@ -1,3 +1,4 @@
+import { supabase } from './supabase';
 import { fetchApi } from './api';
 import { generateMockOutline } from './mockOutlineGenerator';
 import { generateDeckPayload } from './deckPayloadGenerator';
@@ -138,6 +139,63 @@ export async function saveProjectDeckApi(deckPayload) {
     return res;
   } catch (err) {
     console.warn('[Save Project] Gagal simpan ke backend (tersimpan lokal):', err.message);
+    return null;
+  }
+}
+
+export async function syncProjectToBackendApi(project) {
+  if (!project || !project.id) return null;
+  let userId = null;
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    userId = session?.user?.id || null;
+  } catch (e) {}
+
+  const deckPayload = project.deckPayload || {};
+  const slides = deckPayload.slides || [];
+  const brandKit = project.brandKit || deckPayload.brandKit || {
+    primaryColor: '#0F4C81',
+    accentColor: '#F2A007',
+    fontFamily: 'Inter',
+  };
+
+  const payload = {
+    deckId: project.id,
+    id: project.id,
+    businessName: project.title || deckPayload.businessName || 'Presentasi Tanpa Judul',
+    title: project.title || deckPayload.businessName || 'Presentasi Tanpa Judul',
+    template: project.template || 'company_profile',
+    template_type: project.template || 'company_profile',
+    status: project.status || 'draft',
+    brandKit: brandKit,
+    slides: slides,
+    structuredData: project.structuredData || {},
+    rawContext: project.rawContext || '',
+    outlines: project.outlines || [],
+  };
+
+  if (userId) {
+    try {
+      const dbPayload = {
+        id: project.id,
+        user_id: userId,
+        title: payload.title,
+        status: payload.status,
+        updated_at: new Date().toISOString(),
+      };
+      await supabase.from('projects').upsert(dbPayload, { onConflict: 'id' });
+    } catch (err) {
+      console.warn('[Supabase Sync] Warning:', err.message);
+    }
+  }
+
+  try {
+    return await fetchApi('/projects', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.warn('[Backend Sync] Warning:', err.message);
     return null;
   }
 }

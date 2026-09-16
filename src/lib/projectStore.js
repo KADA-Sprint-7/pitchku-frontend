@@ -1,5 +1,6 @@
 // Client-side local draft storage for pitch deck projects (simulates database & Supabase cache)
 import { generateMockOutline } from './mockOutlineGenerator';
+import { syncProjectToBackendApi } from './aiService';
 
 const STORAGE_KEY = 'pitchku_projects_db';
 
@@ -12,9 +13,12 @@ function getAllProjects() {
   }
 }
 
-function saveAllProjects(projects) {
+function saveAllProjects(projects, activeProjectId = null) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    if (activeProjectId && projects[activeProjectId]) {
+      syncProjectToBackendApi(projects[activeProjectId]);
+    }
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
@@ -70,7 +74,7 @@ export const projectStore = {
 
     const all = getAllProjects();
     all[id] = project;
-    saveAllProjects(all);
+    saveAllProjects(all, id);
 
     return project;
   },
@@ -123,7 +127,7 @@ export const projectStore = {
     if (all[projectId]) {
       all[projectId].outlines = outlines;
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;
@@ -155,7 +159,7 @@ export const projectStore = {
         all[projectId].title = structuredData.companyName || structuredData.productName;
       }
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;
@@ -168,7 +172,7 @@ export const projectStore = {
       all[projectId].outlines = confirmedOutline;
       all[projectId].status = 'outline_confirmed';
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;
@@ -211,7 +215,7 @@ export const projectStore = {
         all[projectId].status = 'draft';
       }
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;
@@ -223,7 +227,7 @@ export const projectStore = {
     if (all[projectId]) {
       all[projectId].status = status;
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;
@@ -243,7 +247,7 @@ export const projectStore = {
       slides[slideIndex] = { ...slides[slideIndex], ...updatedSlide };
       all[projectId].deckPayload = { ...all[projectId].deckPayload, slides };
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId].deckPayload;
     }
     return null;
@@ -258,7 +262,7 @@ export const projectStore = {
         // deckPayload tidak menyimpan title terpisah; title tetap ada di project root
       }
       all[projectId].updatedAt = new Date().toISOString();
-      saveAllProjects(all);
+      saveAllProjects(all, projectId);
       return all[projectId];
     }
     return null;

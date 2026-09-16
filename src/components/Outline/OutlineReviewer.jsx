@@ -22,19 +22,39 @@ export default function OutlineReviewer({
     }));
   };
 
+  const touchStartIdxRef = React.useRef(null);
+  const targetDropIdxRef = React.useRef(null);
+
+  const handleMoveUp = (index) => {
+    if (index <= 0) return;
+    const updated = [...outlineList];
+    const [item] = updated.splice(index, 1);
+    updated.splice(index - 1, 0, item);
+    onOutlineChange(renumberSlides(updated));
+  };
+
+  const handleMoveDown = (index) => {
+    if (index >= outlineList.length - 1) return;
+    const updated = [...outlineList];
+    const [item] = updated.splice(index, 1);
+    updated.splice(index + 1, 0, item);
+    onOutlineChange(renumberSlides(updated));
+  };
+
   // Drag and drop handlers (Native HTML5 API)
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-    // Transparent ghost or standard drag
     try {
       e.dataTransfer.setData('text/plain', index.toString());
     } catch {}
   };
 
-  const handleDragOver = (e, index) => {
+  const handleDragOver = (e) => {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
   };
 
   const handleDrop = (e, dropIndex) => {
@@ -56,6 +76,45 @@ export default function OutlineReviewer({
 
   const handleDragEnd = () => {
     setDraggedIndex(null);
+  };
+
+  // Touch Drag & Drop Handlers for Mobile
+  const handleTouchStart = (index) => {
+    touchStartIdxRef.current = index;
+    targetDropIdxRef.current = index;
+    setDraggedIndex(index);
+    if (navigator.vibrate) navigator.vibrate(30);
+  };
+
+  const handleTouchMove = (e) => {
+    if (draggedIndex === null) return;
+    const touch = e.touches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const card = el?.closest('[data-outline-index]');
+    if (card && card.dataset.outlineIndex !== undefined) {
+      const idx = parseInt(card.dataset.outlineIndex, 10);
+      if (!isNaN(idx)) {
+        targetDropIdxRef.current = idx;
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (draggedIndex !== null && targetDropIdxRef.current !== null && draggedIndex !== targetDropIdxRef.current) {
+      const dropIndex = targetDropIdxRef.current;
+      const updated = [...outlineList];
+      const [movedItem] = updated.splice(draggedIndex, 1);
+      updated.splice(dropIndex, 0, movedItem);
+
+      const reordered = renumberSlides(updated);
+      onOutlineChange(reordered);
+      toast.info('Urutan slide diperbarui', {
+        description: `Slide "${movedItem.title}" dipindahkan ke posisi #${dropIndex + 1}`,
+      });
+    }
+    setDraggedIndex(null);
+    touchStartIdxRef.current = null;
+    targetDropIdxRef.current = null;
   };
 
   // Inline title change handler
@@ -147,10 +206,15 @@ export default function OutlineReviewer({
             onTitleChange={handleTitleChange}
             onDuplicate={handleDuplicate}
             onDelete={handleDelete}
+            onMoveUp={handleMoveUp}
+            onMoveDown={handleMoveDown}
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragEnd={handleDragEnd}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             isDragging={draggedIndex === index}
           />
         ))}

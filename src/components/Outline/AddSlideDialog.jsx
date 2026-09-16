@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { PlusCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -16,8 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CANONICAL_LAYOUTS } from '@/lib/mockOutlineGenerator';
-import { PlusCircle } from 'lucide-react';
+const LAYOUT_OPTIONS = [
+  { id: 'title_slide', name: 'Hero Cover', badge: 'Sampul Judul Utama' },
+  { id: 'two_column', name: 'Komparasi 2 Kolom', badge: 'Bandingkan 2 Poin/Sisi' },
+  { id: 'metrics_grid', name: 'Grid 4 Metrik', badge: '4 Kotak KPI & Angka' },
+  { id: 'card_grid', name: 'Bento Cards', badge: 'Kartu Modular Fitur/Katalog' },
+  { id: 'title_bullets', name: 'Poin Penjelasan', badge: 'Daftar Poin & Uraian' },
+  { id: 'contact_closing', name: 'Penutup & Kontak', badge: 'Call to Action & Kontak' },
+];
 
 export default function AddSlideDialog({ open, onOpenChange, onAddSlide }) {
   const [title, setTitle] = useState('');
@@ -25,7 +32,7 @@ export default function AddSlideDialog({ open, onOpenChange, onAddSlide }) {
   const [layoutId, setLayoutId] = useState('two_column');
 
   const selectedLayout =
-    CANONICAL_LAYOUTS.find((l) => l.id === layoutId) || CANONICAL_LAYOUTS[1];
+    LAYOUT_OPTIONS.find((l) => l.id === layoutId) || LAYOUT_OPTIONS[1];
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -35,7 +42,7 @@ export default function AddSlideDialog({ open, onOpenChange, onAddSlide }) {
       id: `slide-${Date.now()}`,
       title: title.trim(),
       objective: objective.trim() || 'Rincian materi slide kustom',
-      suggestedLayout: selectedLayout.badge,
+      suggestedLayout: selectedLayout.name,
       layoutType: selectedLayout.id,
       isEdited: true,
     });
@@ -60,7 +67,7 @@ export default function AddSlideDialog({ open, onOpenChange, onAddSlide }) {
                   Tambah Bab / Slide Baru
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">
-                  Sisipkan slide baru ke dalam struktur presentasi Anda.
+                  Sisipkan slide baru ke dalam alur presentasi Anda.
                 </DialogDescription>
               </div>
             </div>
@@ -105,16 +112,16 @@ export default function AddSlideDialog({ open, onOpenChange, onAddSlide }) {
             {/* Rekomendasi Layout */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                Rekomendasi Layout
+                Rekomendasi Layout Slide
               </label>
               <Select value={layoutId} onValueChange={setLayoutId}>
                 <SelectTrigger className="w-full bg-slate-950/80 border-slate-700/80 text-white text-xs h-10 px-3 cursor-pointer">
                   <SelectValue placeholder="Pilih Layout" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-950 border-slate-800 text-slate-200">
-                  {CANONICAL_LAYOUTS.map((layout) => (
+                  {LAYOUT_OPTIONS.map((layout) => (
                     <SelectItem key={layout.id} value={layout.id} className="text-xs">
-                      {layout.badge} ({layout.name})
+                      {layout.name} — <span className="text-slate-400 font-normal">{layout.badge}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>

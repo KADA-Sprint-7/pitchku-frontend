@@ -110,8 +110,8 @@ function OutlinePage() {
       navigate(`/editor/${projectId}`);
     } catch (err) {
       console.error('Error saat membuat slides:', err);
-      toast.error('Gagal memproses slide', {
-        description: err.message,
+      toast.error('Gagal menyusun slide presentasi', {
+        description: 'Terjadi gangguan saat memproses slide. Silakan coba klik tombol Lanjutkan sekali lagi.',
       });
     } finally {
       setIsSubmitting(false);
@@ -152,7 +152,7 @@ function OutlinePage() {
         </main>
 
         {/* Sticky Bottom Navigation Bar */}
-        <div className="sticky bottom-0 z-30 bg-[#0B111E]/95 backdrop-blur-md border-t border-slate-800/90 py-4 px-6 shadow-2xl">
+        <div className="sticky bottom-16 md:bottom-0 z-40 bg-[#0B111E]/95 backdrop-blur-md border-t border-slate-800/90 py-3 sm:py-4 px-4 sm:px-6 shadow-2xl">
           <div className="max-w-4xl w-full mx-auto flex items-center justify-between gap-4">
             <Button
               type="button"

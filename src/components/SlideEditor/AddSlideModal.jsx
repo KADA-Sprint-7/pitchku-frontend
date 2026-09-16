@@ -89,15 +89,15 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl bg-[#0B1220] border border-slate-700/70 text-slate-100 shadow-2xl shadow-black/80 max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[94vw] max-w-2xl bg-[#0B1220] border border-slate-700/70 text-slate-100 shadow-2xl shadow-black/80 rounded-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleConfirm}>
-          <DialogHeader className="pb-3 border-b border-slate-800">
+          <DialogHeader className="pb-2.5 sm:pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center">
-                <PlusCircle className="w-5 h-5 text-sky-400" />
+              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center shrink-0">
+                <PlusCircle className="w-4 h-4 sm:w-5 sm:h-5 text-sky-400" />
               </div>
               <div>
-                <DialogTitle className="text-lg font-bold text-white tracking-tight">
+                <DialogTitle className="text-base sm:text-lg font-bold text-white tracking-tight">
                   Pilih Template Layout Slide Baru
                 </DialogTitle>
                 <DialogDescription className="text-xs text-slate-400">
@@ -108,8 +108,8 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
           </DialogHeader>
 
           {/* Grid of 6 layout options */}
-          <div className="py-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="py-3 sm:py-4 space-y-3.5 sm:space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {CANONICAL_LAYOUT_OPTIONS.map((layout) => {
                 const isSelected = selectedLayoutId === layout.id;
                 const Icon = layout.icon;
@@ -119,7 +119,7 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
                     key={layout.id}
                     onClick={() => setSelectedLayoutId(layout.id)}
                     className={cn(
-                      'relative flex flex-col justify-between p-3.5 rounded-xl border transition-all cursor-pointer select-none text-left',
+                      'relative flex flex-col justify-between p-3 sm:p-3.5 rounded-xl border transition-all cursor-pointer select-none text-left',
                       isSelected
                         ? 'bg-sky-950/40 border-sky-400 ring-2 ring-sky-400/40 shadow-lg shadow-sky-500/10'
                         : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-850'
@@ -130,17 +130,17 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
                       <div className="flex items-center gap-2">
                         <div
                           className={cn(
-                            'w-7 h-7 rounded-lg flex items-center justify-center border',
+                            'w-6 h-6 sm:w-7 sm:h-7 rounded-lg flex items-center justify-center border shrink-0',
                             isSelected
                               ? 'bg-sky-500/20 border-sky-400/50 text-sky-300'
                               : 'bg-slate-800 border-slate-700 text-slate-400'
                           )}
                         >
-                          <Icon className="w-4 h-4" />
+                          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                         </div>
                         <div>
                           <p className="text-xs font-bold text-white">{layout.name}</p>
-                          <span className="text-[10px] text-slate-500 font-mono uppercase">
+                          <span className="text-[9px] sm:text-[10px] text-slate-500 font-mono uppercase">
                             {layout.id}
                           </span>
                         </div>
@@ -148,15 +148,15 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
 
                       {/* Selected check indicator */}
                       {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-sky-400 text-slate-950 flex items-center justify-center shrink-0 shadow-sm">
-                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sky-400 text-slate-950 flex items-center justify-center shrink-0 shadow-sm">
+                          <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 stroke-[3]" />
                         </div>
                       )}
                     </div>
 
-                    {/* Mini layout schematic preview */}
+                    {/* Mini layout schematic preview (Desktop / tablet only to prevent gepeng look on small mobile) */}
                     <div
-                      className="w-full h-14 rounded-lg my-2.5 p-1.5 flex flex-col justify-between relative overflow-hidden border border-slate-700/40 pointer-events-none"
+                      className="hidden sm:flex w-full h-12 sm:h-14 rounded-lg my-2 sm:my-2.5 p-1.5 flex-col justify-between relative overflow-hidden border border-slate-700/40 pointer-events-none"
                       style={{
                         background: `linear-gradient(135deg, ${primary}33 0%, #050A14 100%)`,
                       }}
@@ -199,7 +199,7 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
                     </div>
 
                     {/* Description */}
-                    <p className="text-[11px] text-slate-400 leading-tight">
+                    <p className="text-[10px] sm:text-[11px] text-slate-400 leading-tight">
                       {layout.description}
                     </p>
                   </div>
@@ -226,20 +226,20 @@ export default function AddSlideModal({ open, onOpenChange, onAddSlide, brandKit
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0 pt-2 border-t border-slate-800">
+          <DialogFooter className="flex flex-row gap-2 pt-2 border-t border-slate-800">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={() => onOpenChange(false)}
-              className="bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs"
+              className="flex-1 bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white text-xs h-9 cursor-pointer"
             >
               Batal
             </Button>
             <Button
               type="submit"
               size="sm"
-              className="bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs px-4"
+              className="flex-1 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs h-9 px-4 cursor-pointer"
             >
               Sisipkan Slide
             </Button>

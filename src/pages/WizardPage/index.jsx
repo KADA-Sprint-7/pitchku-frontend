@@ -126,8 +126,8 @@ function WizardPage() {
         navigate(`/outline/${project?.id || existingProjectId}`);
       } catch (err) {
         console.error('Error saat membuat outline:', err);
-        toast.error('Gagal membuat outline', {
-          description: err.message,
+        toast.error('Gagal merancang kerangka slide', {
+          description: 'Koneksi AI sedang padat atau terganggu. Silakan tekan tombol Lanjutkan kembali.',
         });
       } finally {
         setIsGeneratingOutline(false);
@@ -177,7 +177,7 @@ function WizardPage() {
       <AppSidebar />
 
       {/* Main wizard content workspace */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 pb-16 md:pb-0">
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-7xl w-full mx-auto px-6 py-8">
             {/* Stepper: only visible from Step 2 onward */}

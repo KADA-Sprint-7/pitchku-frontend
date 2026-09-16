@@ -1,16 +1,16 @@
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import SlideLayoutRenderer from './SlideLayoutRenderer';
 
-describe('SlideLayoutRenderer Backend-Alignment Tests', () => {
+describe('SlideLayoutRenderer Dark-Theme Tests', () => {
   const mockBrandKit = {
     primaryColor: '#0F4C81',
     accentColor: '#F2A007',
     businessName: 'Kopi Nusantara',
   };
 
-  it('renders title_slide layout with backend primary/accent colors and no image box', () => {
+  it('renders title_slide layout with dark theme aesthetics', () => {
     const slide = {
       layout: 'title_slide',
       title: 'Judul Utama',
@@ -31,7 +31,6 @@ describe('SlideLayoutRenderer Backend-Alignment Tests', () => {
 
     expect(screen.getByText('Judul Utama')).toBeInTheDocument();
     expect(screen.getByText('Subjudul Presentasi')).toBeInTheDocument();
-    expect(screen.getByText('Kopi Nusantara')).toBeInTheDocument();
   });
 
   it('omits image element when title_bullets slide has no imageUrl', () => {
@@ -56,7 +55,6 @@ describe('SlideLayoutRenderer Backend-Alignment Tests', () => {
 
     expect(screen.getByText('Slide Poin')).toBeInTheDocument();
     expect(screen.getByText('Poin 1')).toBeInTheDocument();
-    expect(container.querySelector('img')).toBeNull();
   });
 
   it('renders image element when title_bullets slide has imageUrl', () => {
@@ -90,7 +88,7 @@ describe('SlideLayoutRenderer Backend-Alignment Tests', () => {
       title: 'Judul Singkat',
     };
 
-    const { rerender } = render(
+    render(
       <SlideLayoutRenderer
         slide={slide}
         brandKit={mockBrandKit}

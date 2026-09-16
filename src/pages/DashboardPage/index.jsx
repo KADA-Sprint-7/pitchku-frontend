@@ -6,6 +6,7 @@ import DashboardMetrics from "@/components/DashboardPage/DashboardMetrics";
 import DashboardFilterBar from "@/components/DashboardPage/DashboardFilterBar";
 import ProjectGrid from "@/components/DashboardPage/ProjectGrid";
 import { fetchApi } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { projectStore } from "@/lib/projectStore";
 import { deleteProjectByIdApi } from "@/lib/aiService";
 import { Loader2 } from "lucide-react";
@@ -26,7 +27,25 @@ function DashboardPage() {
     async function loadProjects() {
       try {
         setLoading(true);
-        // Ambil dari backend
+
+        // 0. Direct Supabase Query (jika user logged in)
+        let supabaseProjects = [];
+        try {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session?.user?.id) {
+            const { data, error } = await supabase
+              .from("projects")
+              .select("*")
+              .order("updated_at", { ascending: false });
+            if (!error && Array.isArray(data)) {
+              supabaseProjects = data;
+            }
+          }
+        } catch (e) {
+          console.warn("Supabase fetch projects error:", e.message);
+        }
+
+        // 1. Ambil dari backend API
         let backendProjects = [];
         try {
           const res = await fetchApi("/projects");
@@ -36,6 +55,8 @@ function DashboardPage() {
             backendProjects = res.data;
           } else if (res && Array.isArray(res.projects)) {
             backendProjects = res.projects;
+          } else if (res && res.data && Array.isArray(res.data.projects)) {
+            backendProjects = res.data.projects;
           }
         } catch (err) {
           console.warn("Backend /api/projects belum merespon:", err.message);
@@ -47,7 +68,7 @@ function DashboardPage() {
         // Gabungkan berdasarkan ID unik (prioritaskan data terbaru)
         const projectMap = new Map();
 
-        // 1. Masukkan data lokal
+        // 1. Masukkan data lokal terlebih dahulu
         localDrafts.forEach((p) => {
           const hasPayload = !!p.deckPayload && Array.isArray(p.deckPayload.slides) && p.deckPayload.slides.length > 0;
           projectMap.set(p.id, {
@@ -56,17 +77,65 @@ function DashboardPage() {
             templateType: p.template,
             status: p.status === "selesai" ? "selesai" : "draft",
             hasDeckPayload: hasPayload,
-            updatedAt: p.updatedAt || new Date().toISOString(),
+            updatedAt: p.updatedAt || p.createdAt || new Date().toISOString(),
             slideCount: hasPayload ? p.deckPayload.slides.length : (p.outlines?.length || 0),
           });
         });
 
-        // 2. Timpa / tambahkan dari backend jika ada
-        backendProjects.forEach((p) => {
+        // 2. Tambahkan data dari Supabase DB jika ada
+        supabaseProjects.forEach((p) => {
+          if (!p.id) return;
           projectMap.set(p.id, {
-            ...p,
-            slideCount: p.slides?.length || p.slideCount || 8,
+            id: p.id,
+            title: p.title || "Presentasi Tanpa Judul",
+            templateType: p.template_type || p.template || "company_profile",
+            status: p.status === "selesai" ? "selesai" : "draft",
+            hasDeckPayload: true,
+            updatedAt: p.updated_at || p.created_at || new Date().toISOString(),
+            slideCount: 8,
           });
+        });
+
+        // 2. Timpa / tambahkan dari backend jika pengguna sedang terhubung dengan server
+        backendProjects.forEach((p) => {
+          const id = p.id || p.deckId || p.project_id;
+          if (!id) return;
+
+          const slides = p.slides || p.deck_payload?.slides || p.deckPayload?.slides || [];
+          const hasPayload = slides.length > 0;
+          const slideCount = slides.length || p.slideCount || p.slide_count || 8;
+          const title =
+            p.title ||
+            p.businessName ||
+            p.business_name ||
+            p.name ||
+            p.structuredData?.companyName ||
+            "Presentasi Tanpa Judul";
+          const templateType = p.templateType || p.template_type || p.template || "company_profile";
+          const status = p.status === "selesai" ? "selesai" : "draft";
+          const updatedAt = p.updatedAt || p.updated_at || p.createdAt || p.created_at || new Date().toISOString();
+
+          projectMap.set(id, {
+            ...p,
+            id,
+            title,
+            templateType,
+            status,
+            hasDeckPayload: hasPayload,
+            updatedAt,
+            slideCount,
+          });
+
+          // Simpan payload ke projectStore lokal agar saat dibuka dari mobile bisa langsung di-render
+          if (hasPayload) {
+            projectStore.saveDeckPayload(id, {
+              deckId: id,
+              businessName: title,
+              template: templateType,
+              brandKit: p.brandKit || p.brand_kit || { primaryColor: "#0F4C81", accentColor: "#F2A007", fontFamily: "Inter" },
+              slides,
+            });
+          }
         });
 
         if (isMounted) {

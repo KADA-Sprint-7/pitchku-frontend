@@ -786,31 +786,31 @@ export default function ExportPresentationModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         id="export-modal"
-        className="sm:max-w-md bg-[#0D1525] border border-slate-700/60 text-slate-100 shadow-2xl shadow-black/60"
+        className="w-[92vw] max-w-md bg-[#0D1525] border border-slate-700/60 text-slate-100 shadow-2xl shadow-black/60 rounded-2xl p-4 sm:p-6 max-h-[90vh] overflow-y-auto"
       >
         {/* Close button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 text-slate-500 hover:text-white transition-colors cursor-pointer"
+          className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 text-slate-500 hover:text-white transition-colors cursor-pointer"
           aria-label="Tutup"
         >
           <X className="w-4 h-4" />
         </button>
 
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-lg font-bold text-white flex items-center gap-2">
-            <FileDown className="w-5 h-5 text-amber-400" />
+          <DialogTitle className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+            <FileDown className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400 shrink-0" />
             Unduh Presentasi Native
           </DialogTitle>
-          <DialogDescription className="text-slate-400 text-sm">
+          <DialogDescription className="text-slate-400 text-xs sm:text-sm">
             Pilih format dan nama file untuk mengunduh slide deck Anda secara penuh.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-2">
+        <div className="space-y-4 sm:space-y-5 py-1 sm:py-2">
           {/* File name input */}
           <div className="space-y-1.5">
-            <Label htmlFor="export-filename" className="text-sm font-medium text-slate-300">
+            <Label htmlFor="export-filename" className="text-xs sm:text-sm font-medium text-slate-300">
               Nama File
             </Label>
             <Input
@@ -819,7 +819,7 @@ export default function ExportPresentationModal({
               onChange={(e) => setFileName(e.target.value)}
               placeholder="Contoh: Kopi Nusantara 2025"
               maxLength={120}
-              className="bg-slate-800/60 border-slate-700/60 text-slate-100 placeholder:text-slate-500 focus:border-sky-500 focus:ring-sky-500/20"
+              className="bg-slate-800/60 border-slate-700/60 text-slate-100 placeholder:text-slate-500 text-xs sm:text-sm h-9 sm:h-10 focus:border-sky-500 focus:ring-sky-500/20"
             />
             <p className="text-[10px] text-slate-500">
               Ekstensi format (.pptx / .pdf) akan ditambahkan secara otomatis.
@@ -828,8 +828,8 @@ export default function ExportPresentationModal({
 
           {/* Format selection */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium text-slate-300">Format Unduhan</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <Label className="text-xs sm:text-sm font-medium text-slate-300">Format Unduhan</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {FORMAT_OPTIONS.map(({ id, label, ext, icon: Icon, description, color }) => {
                 const isSelected = selectedFormat === id;
                 return (
@@ -838,7 +838,7 @@ export default function ExportPresentationModal({
                     id={`export-format-${id}`}
                     onClick={() => setSelectedFormat(id)}
                     className={cn(
-                      'flex flex-col items-start gap-2 p-3.5 rounded-xl border transition-all cursor-pointer text-left',
+                      'flex flex-col items-start gap-1.5 p-3 rounded-xl border transition-all cursor-pointer text-left',
                       isSelected
                         ? color === 'sky'
                           ? 'border-sky-500/60 bg-sky-500/10 ring-1 ring-sky-500/30'
@@ -848,25 +848,39 @@ export default function ExportPresentationModal({
                     aria-pressed={isSelected}
                     aria-label={`Format ${label}`}
                   >
-                    <div className="flex items-center gap-2">
-                      <Icon
+                    <div className="flex items-center gap-2 w-full justify-between sm:justify-start">
+                      <div className="flex items-center gap-2">
+                        <Icon
+                          className={cn(
+                            'w-4 h-4 shrink-0',
+                            isSelected
+                              ? color === 'sky'
+                                ? 'text-sky-400'
+                                : 'text-violet-400'
+                              : 'text-slate-400'
+                          )}
+                        />
+                        <span
+                          className={cn(
+                            'text-xs sm:text-sm font-semibold',
+                            isSelected ? 'text-white' : 'text-slate-300'
+                          )}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                      <code
                         className={cn(
-                          'w-4 h-4',
+                          'text-[9px] font-mono px-1.5 py-0.5 rounded shrink-0',
                           isSelected
                             ? color === 'sky'
-                              ? 'text-sky-400'
-                              : 'text-violet-400'
-                            : 'text-slate-400'
-                        )}
-                      />
-                      <span
-                        className={cn(
-                          'text-sm font-semibold',
-                          isSelected ? 'text-white' : 'text-slate-300'
+                              ? 'bg-sky-500/20 text-sky-300'
+                              : 'bg-violet-500/20 text-violet-300'
+                            : 'bg-slate-700/50 text-slate-400'
                         )}
                       >
-                        {label}
-                      </span>
+                        {ext}
+                      </code>
                     </div>
                     <span
                       className={cn(
@@ -876,18 +890,6 @@ export default function ExportPresentationModal({
                     >
                       {description}
                     </span>
-                    <code
-                      className={cn(
-                        'text-[9px] font-mono px-1.5 py-0.5 rounded',
-                        isSelected
-                          ? color === 'sky'
-                            ? 'bg-sky-500/20 text-sky-300'
-                            : 'bg-violet-500/20 text-violet-300'
-                          : 'bg-slate-700/50 text-slate-400'
-                      )}
-                    >
-                      {ext}
-                    </code>
                   </button>
                 );
               })}
@@ -895,12 +897,12 @@ export default function ExportPresentationModal({
           </div>
         </div>
 
-        <DialogFooter className="flex gap-2 pt-2">
+        <DialogFooter className="flex flex-row gap-2 pt-2">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isDownloading}
-            className="flex-1 bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-700 hover:text-white cursor-pointer"
+            className="flex-1 bg-slate-800/60 border-slate-700/60 text-slate-300 hover:bg-slate-700 hover:text-white text-xs sm:text-sm h-9 sm:h-10 cursor-pointer"
           >
             Batal
           </Button>
@@ -908,16 +910,16 @@ export default function ExportPresentationModal({
             id="export-confirm-btn"
             onClick={handleDownload}
             disabled={isDownloading || !fileName.trim()}
-            className="flex-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold cursor-pointer shadow-lg shadow-amber-400/20 transition-all hover:scale-[1.02] disabled:opacity-50"
+            className="flex-1 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm h-9 sm:h-10 cursor-pointer shadow-lg shadow-amber-400/20 transition-all hover:scale-[1.02] disabled:opacity-50"
           >
             {isDownloading ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <Loader2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 animate-spin mr-1.5" />
                 Mengunduh...
               </>
             ) : (
               <>
-                <FileDown className="w-4 h-4 mr-2" />
+                <FileDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1.5" />
                 Unduh Sekarang
               </>
             )}

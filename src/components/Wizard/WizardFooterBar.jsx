@@ -24,8 +24,8 @@ export default function WizardFooterBar({
       : 'Lanjutkan';
 
   return (
-    <div className="sticky bottom-0 z-30 border-t border-slate-800/60 bg-[#070C15]/95 backdrop-blur-md">
-      <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+    <div className="sticky bottom-16 md:bottom-0 z-40 border-t border-slate-800/60 bg-[#070C15]/95 backdrop-blur-md">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-4">
         {/* Back button */}
         {showBack ? (
           <Button

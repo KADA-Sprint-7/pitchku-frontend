@@ -99,7 +99,7 @@ const LAYOUT_LABELS = {
 };
 
 /**
- * SlideThumbnailRail — Vertical sidebar panel on the left side of the editor layout.
+ * SlideThumbnailRail — Vertical sidebar panel on the left side of the editor layout
  */
 export default function SlideThumbnailRail({
   slides = [],
@@ -113,6 +113,8 @@ export default function SlideThumbnailRail({
   const railRef = useRef(null);
   const [slideToDelete, setSlideToDelete] = useState(null);
   const [draggedIdx, setDraggedIdx] = useState(null);
+  const touchTimerRef = useRef(null);
+  const touchStartPosRef = useRef({ x: 0, y: 0 });
 
   // Auto-scroll so active thumbnail is visible in vertical rail
   useEffect(() => {
@@ -137,7 +139,9 @@ export default function SlideThumbnailRail({
 
   const handleDragStart = (e, index) => {
     setDraggedIdx(index);
-    e.dataTransfer.setData('text/plain', index.toString());
+    if (e.dataTransfer) {
+      e.dataTransfer.setData('text/plain', index.toString());
+    }
   };
 
   const handleDragOver = (e) => {
@@ -151,6 +155,54 @@ export default function SlideThumbnailRail({
     setDraggedIdx(null);
   };
 
+  // ── Touch Drag & Drop Reorder Handlers for Mobile ──
+  const touchStartIdxRef = useRef(null);
+  const targetDropIdxRef = useRef(null);
+
+  const handleTouchStart = (index, e) => {
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    touchStartIdxRef.current = index;
+    targetDropIdxRef.current = index;
+
+    touchTimerRef.current = setTimeout(() => {
+      setDraggedIdx(index);
+      if (navigator.vibrate) navigator.vibrate(40);
+    }, 250); // 250ms long-press activates drag state
+  };
+
+  const handleTouchMove = (index, e) => {
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+
+    if (draggedIdx === null) {
+      if (dx > 10 || dy > 10) {
+        clearTimeout(touchTimerRef.current);
+      }
+    } else {
+      // Find element under touch finger location
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const slideCard = el?.closest('[data-slide-index]');
+      if (slideCard && slideCard.dataset.slideIndex !== undefined) {
+        const targetIdx = parseInt(slideCard.dataset.slideIndex, 10);
+        if (!isNaN(targetIdx)) {
+          targetDropIdxRef.current = targetIdx;
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
+    clearTimeout(touchTimerRef.current);
+    if (draggedIdx !== null && targetDropIdxRef.current !== null && draggedIdx !== targetDropIdxRef.current) {
+      onReorderSlides?.(draggedIdx, targetDropIdxRef.current);
+    }
+    setDraggedIdx(null);
+    touchStartIdxRef.current = null;
+    targetDropIdxRef.current = null;
+  };
+
   const confirmDelete = () => {
     if (slideToDelete !== null) {
       onDeleteSlide?.(slideToDelete);
@@ -161,7 +213,7 @@ export default function SlideThumbnailRail({
   const targetSlideObj = slideToDelete !== null ? slides[slideToDelete] : null;
 
   return (
-    <aside className="w-full md:w-[210px] h-[64px] sm:h-[72px] md:h-full bg-[#060B17] border-t md:border-t-0 md:border-r border-slate-800/80 flex flex-row md:flex-col shrink-0 overflow-hidden select-none z-20">
+    <aside className="w-full md:w-[210px] h-[80px] sm:h-[88px] md:h-full bg-[#060B17] border-t md:border-t-0 md:border-r border-slate-800/80 flex flex-row md:flex-col shrink-0 overflow-hidden select-none z-20">
       {/* Header section (Desktop Vertical Header / Mobile Compact Left Action) */}
       <div className="hidden md:flex p-3 border-b border-slate-800/80 items-center justify-between shrink-0 bg-[#080E1C]">
         <div className="flex items-center gap-1.5">
@@ -183,22 +235,21 @@ export default function SlideThumbnailRail({
         </button>
       </div>
 
-      {/* Mobile Add Slide Button (Sticky Left on Mobile Bottombar) */}
+      {/* Mobile Add Slide Button (Sticky Left on Mobile Bottombar - Only '+' Icon without text) */}
       <div className="flex md:hidden items-center px-2 py-1 border-r border-slate-800 shrink-0 bg-[#080E1C]">
         <button
           onClick={onOpenAddSlideModal}
-          className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 active:scale-95 transition-all"
+          className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 active:scale-95 transition-all"
           title="Tambah Slide Baru"
         >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-          <span className="text-[8px] font-bold leading-none mt-0.5">Tambah</span>
+          <Plus className="w-6 h-6 stroke-[2.5]" />
         </button>
       </div>
 
       {/* List of thumbnails */}
       <div
         ref={railRef}
-        className="flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-2 py-1 md:p-2.5 flex flex-row md:flex-col gap-2 md:gap-2.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent items-center md:items-stretch snap-x md:snap-none"
+        className="flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-2 py-1.5 md:p-2.5 flex flex-row md:flex-col gap-2.5 md:gap-2.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent items-center md:items-stretch snap-x md:snap-none"
         role="tablist"
         aria-label="Daftar slide"
       >
@@ -211,17 +262,21 @@ export default function SlideThumbnailRail({
               key={slide.id || idx}
               id={`slide-thumb-${idx}`}
               data-active={isActive}
+              data-slide-index={idx}
               draggable
               onDragStart={(e) => handleDragStart(e, idx)}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, idx)}
+              onTouchStart={(e) => handleTouchStart(idx, e)}
+              onTouchMove={(e) => handleTouchMove(idx, e)}
+              onTouchEnd={handleTouchEnd}
               onClick={() => onSlideSelect?.(idx)}
               className={cn(
-                'group relative flex items-center gap-1.5 md:gap-2 p-1 md:p-2 rounded-lg md:rounded-xl border transition-all duration-200 cursor-pointer outline-none shrink-0 snap-center',
+                'group relative flex items-center gap-2 p-1.5 md:p-2 rounded-xl border transition-all duration-200 cursor-pointer outline-none shrink-0 snap-center',
                 isActive
                   ? 'bg-sky-950/60 border-sky-400 ring-1 ring-sky-400 shadow-md shadow-sky-500/20'
                   : 'bg-slate-900/40 border-slate-800 hover:border-slate-700 hover:bg-slate-800/50',
-                draggedIdx === idx && 'opacity-40'
+                draggedIdx === idx && 'opacity-40 scale-95 ring-2 ring-amber-400'
               )}
             >
               {/* Drag handle (Desktop) */}
@@ -232,17 +287,17 @@ export default function SlideThumbnailRail({
               {/* Number indicator */}
               <span
                 className={cn(
-                  'text-[10px] md:text-[11px] font-bold font-mono shrink-0 w-3.5 text-center',
+                  'text-[11px] font-bold font-mono shrink-0 w-4 text-center',
                   isActive ? 'text-sky-400' : 'text-slate-500'
                 )}
               >
                 {String(idx + 1).padStart(2, '0')}
               </span>
 
-              {/* Thumbnail canvas preview */}
+              {/* Thumbnail canvas preview (Enlarged on mobile: 88px x 49.5px) */}
               <div
                 className={cn(
-                  'w-[64px] sm:w-[72px] md:w-[82px] h-[36px] sm:h-[40px] md:h-[48px] rounded overflow-hidden border shrink-0 transition-all relative',
+                  'w-[88px] sm:w-[96px] md:w-[82px] h-[49.5px] sm:h-[54px] md:h-[48px] rounded overflow-hidden border shrink-0 transition-all relative',
                   isActive
                     ? 'border-sky-400/80 shadow-sm shadow-sky-400/30'
                     : 'border-slate-700/50 group-hover:border-slate-600'
