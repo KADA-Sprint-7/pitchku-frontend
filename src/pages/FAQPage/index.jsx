@@ -1,6 +1,6 @@
-import React from "react";
+import { useEffect } from "react";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { HelpCircle, Sparkles } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import {
   Accordion,
   AccordionItem,
@@ -88,6 +88,11 @@ const FAQ_ITEMS = [
 
 export default function FAQPage() {
   usePageTitle("FAQ Page — PitchKu");
+
+  // Reset scroll ke atas setiap kali halaman FAQ dibuka
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#070C15] text-white">
