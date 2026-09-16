@@ -122,10 +122,24 @@ export const projectStore = {
   updateProjectData: (projectId, { template, structuredData, rawContext, brandKit }) => {
     const all = getAllProjects();
     if (all[projectId]) {
+      const existingLogo = all[projectId].brandKit?.logoUrl || all[projectId].deckPayload?.brandKit?.logoUrl;
+      const updatedBrandKit = {
+        ...(brandKit || {}),
+        logoUrl: brandKit?.logoUrl || existingLogo || null,
+      };
+
       all[projectId].template = template;
       all[projectId].structuredData = structuredData;
       all[projectId].rawContext = rawContext;
-      all[projectId].brandKit = brandKit;
+      all[projectId].brandKit = updatedBrandKit;
+
+      if (all[projectId].deckPayload) {
+        all[projectId].deckPayload.brandKit = {
+          ...(all[projectId].deckPayload.brandKit || {}),
+          ...updatedBrandKit,
+        };
+      }
+
       if (structuredData?.companyName || structuredData?.productName) {
         all[projectId].title = structuredData.companyName || structuredData.productName;
       }
@@ -153,7 +167,29 @@ export const projectStore = {
   saveDeckPayload: (projectId, deckPayload) => {
     const all = getAllProjects();
     if (all[projectId]) {
-      all[projectId].deckPayload = deckPayload;
+      // Synchronize brandKit logoUrl bi-directionally so logo is never lost
+      const projectLogo = all[projectId].brandKit?.logoUrl;
+      const payloadLogo = deckPayload?.brandKit?.logoUrl;
+      const finalLogoUrl = payloadLogo || projectLogo || null;
+
+      const mergedPayload = { ...deckPayload };
+      if (deckPayload?.brandKit || finalLogoUrl) {
+        mergedPayload.brandKit = {
+          ...(deckPayload?.brandKit || {}),
+          logoUrl: finalLogoUrl,
+        };
+      }
+
+      all[projectId].deckPayload = mergedPayload;
+
+      if (finalLogoUrl || deckPayload?.brandKit) {
+        all[projectId].brandKit = {
+          ...(all[projectId].brandKit || {}),
+          ...(deckPayload?.brandKit || {}),
+          logoUrl: finalLogoUrl,
+        };
+      }
+
       if (deckPayload?.businessName && deckPayload.businessName !== 'Presentasi Tanpa Judul') {
         all[projectId].title = deckPayload.businessName;
       } else if (all[projectId].structuredData?.companyName || all[projectId].structuredData?.productName) {

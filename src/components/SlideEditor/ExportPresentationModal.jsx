@@ -305,7 +305,8 @@ export default function ExportPresentationModal({
     deckTitle,
     logoDim,
     logoDataUrl,
-    slideImageDataUrl
+    slideImageDataUrl,
+    slideImageDim
   ) => {
     const primary = toSolidHex(brandKit?.primaryColor || '#0F4C81');
     const accent  = toSolidHex(brandKit?.accentColor  || '#F2A007');
@@ -394,7 +395,7 @@ export default function ExportPresentationModal({
     // ── Layout-specific content ──────────────────────────────────────────────
 
     if (slideData.layout === 'title_slide') {
-      // Right image
+      // Right cover image (spanning right 38% height 100% with object-cover fit)
       const hasCoverImage = !!slideImageDataUrl || !!slideData.imageUrl;
       if (hasCoverImage) {
         try {
@@ -635,9 +636,11 @@ export default function ExportPresentationModal({
     for (let idx = 0; idx < slides.length; idx++) {
       const slide = slides[idx];
       let slideImageDataUrl = null;
+      let slideImageDim = null;
       if (slide.imageUrl) {
         try {
           slideImageDataUrl = await urlToDataUrl(slide.imageUrl);
+          slideImageDim = await getImageNaturalDimensions(slide.imageUrl);
         } catch {
           /* skip */
         }
@@ -652,7 +655,8 @@ export default function ExportPresentationModal({
         deckTitle,
         logoDim,
         logoDataUrl,
-        slideImageDataUrl
+        slideImageDataUrl,
+        slideImageDim
       );
     }
 

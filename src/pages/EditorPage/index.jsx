@@ -69,29 +69,65 @@ function EditorPage() {
 
       if (!isMounted) return;
 
+      // 2. Ambil dari local store untuk sinkronisasi logo & fallback
+      const loadedProject = projectStore.getProject(projectId);
+      const existingPayload = projectStore.getDeckPayload(projectId);
+
+      const preservedLogoUrl =
+        serverProject?.brandKit?.logoUrl ||
+        existingPayload?.brandKit?.logoUrl ||
+        loadedProject?.brandKit?.logoUrl ||
+        null;
+
       if (serverProject && serverProject.slides) {
+        const mergedBrandKit = {
+          ...(serverProject.brandKit || {}),
+          logoUrl: preservedLogoUrl,
+        };
+        const updatedServerProject = {
+          ...serverProject,
+          brandKit: mergedBrandKit,
+        };
         setProject({
           id: serverProject.deckId || projectId,
           title: serverProject.businessName || 'Pitch Deck',
           template: serverProject.template,
-          brandKit: serverProject.brandKit,
+          brandKit: mergedBrandKit,
           status: serverProject.status || 'draft',
         });
-        setDeckPayload(serverProject);
-        projectStore.saveDeckPayload(projectId, serverProject);
+        setDeckPayload(updatedServerProject);
+        projectStore.saveDeckPayload(projectId, updatedServerProject);
         return;
       }
 
-      // 2. Ambil dari local store jika server offline / data baru
-      const loadedProject = projectStore.getProject(projectId);
-      setProject(loadedProject);
+      // Fallback local store
+      const finalBrandKit = {
+        ...(loadedProject?.brandKit || {}),
+        logoUrl: preservedLogoUrl,
+      };
 
-      const existingPayload = projectStore.getDeckPayload(projectId);
+      setProject({
+        ...(loadedProject || {}),
+        brandKit: finalBrandKit,
+      });
+
       if (existingPayload) {
-        setDeckPayload(existingPayload);
+        const updatedPayload = {
+          ...existingPayload,
+          brandKit: {
+            ...(existingPayload.brandKit || {}),
+            logoUrl: preservedLogoUrl,
+          },
+        };
+        setDeckPayload(updatedPayload);
+        projectStore.saveDeckPayload(projectId, updatedPayload);
       } else {
         const outlines = loadedProject?.outlines || [];
         const generatedPayload = generateDeckPayload(loadedProject, outlines);
+        generatedPayload.brandKit = {
+          ...(generatedPayload.brandKit || {}),
+          logoUrl: preservedLogoUrl,
+        };
         setDeckPayload(generatedPayload);
         projectStore.saveDeckPayload(projectId, generatedPayload);
       }

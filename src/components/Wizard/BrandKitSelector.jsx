@@ -135,20 +135,23 @@ export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
     const sizeInKB = Math.round(file.size / 1024);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      onBrandKitChange({
+        ...brandKit,
+        logoUrl: dataUrl,
+        logoFile: file,
+        logoName: file.name,
+        logoSize: `${sizeInKB} KB`,
+      });
 
-    onBrandKitChange({
-      ...brandKit,
-      logoUrl: objectUrl,
-      logoFile: file,
-      logoName: file.name,
-      logoSize: `${sizeInKB} KB`,
-    });
-
-    toast.success('Logo berhasil diunggah', {
-      description: `${file.name} (${sizeInKB} KB) siap digunakan.`,
-    });
+      toast.success('Logo berhasil diunggah', {
+        description: `${file.name} (${sizeInKB} KB) siap digunakan.`,
+      });
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleApplyPreset = (preset) => {

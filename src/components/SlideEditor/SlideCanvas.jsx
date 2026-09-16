@@ -15,6 +15,7 @@ export default function SlideCanvas({
   onImageClick,
 }) {
   const [zoomScale, setZoomScale] = useState(1);
+  const [logoError, setLogoError] = useState(false);
 
   const accent = brandKit?.accentColor || '#F2A007';
   const logoUrl = brandKit?.logoUrl;
@@ -106,10 +107,11 @@ export default function SlideCanvas({
             {/* Logo placement on non-cover slides */}
             {!isTitleSlide && (
               <div>
-                {logoUrl ? (
+                {logoUrl && !logoError ? (
                   <img
                     src={logoUrl}
                     alt="Logo"
+                    onError={() => setLogoError(true)}
                     className="h-[22px] w-auto object-contain max-w-[90px] filter drop-shadow"
                   />
                 ) : (
