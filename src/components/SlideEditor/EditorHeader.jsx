@@ -156,7 +156,7 @@ export default function EditorHeader({
                 className="flex items-center gap-1.5 group min-w-0 cursor-pointer"
                 aria-label="Edit judul deck"
               >
-                <span className="text-sm font-medium text-slate-200 truncate max-w-[160px] sm:max-w-xs group-hover:text-white transition-colors">
+                <span className="text-xs sm:text-sm font-medium text-slate-200 truncate max-w-[100px] xs:max-w-[140px] sm:max-w-xs group-hover:text-white transition-colors">
                   {deckTitle}
                 </span>
                 <Pencil className="w-3 h-3 text-slate-500 group-hover:text-sky-400 shrink-0 transition-colors" />
@@ -166,20 +166,20 @@ export default function EditorHeader({
         </div>
 
         {/* CENTER — auto-save status & project status */}
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Status Badge Toggle */}
           <button
             type="button"
             onClick={onStatusToggle}
             title={isCompleted ? "Klik untuk ubah status ke Draf" : "Klik untuk tandai proyek Selesai"}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all cursor-pointer hover:scale-105 select-none ${
+            className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-all cursor-pointer hover:scale-105 select-none ${
               isCompleted
                 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 hover:bg-emerald-500/25"
                 : "bg-amber-500/15 text-amber-400 border-amber-500/40 hover:bg-amber-500/25"
             }`}
           >
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                 isCompleted ? "bg-emerald-400" : "bg-amber-400 animate-pulse"
               }`}
             />
@@ -203,15 +203,16 @@ export default function EditorHeader({
         </div>
 
         {/* RIGHT — actions */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Export / Download button */}
           <Button
             id="editor-export-btn"
             onClick={onOpenExport}
-            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs h-8 px-3 gap-1.5 cursor-pointer shadow-lg shadow-amber-400/20 transition-all hover:scale-[1.02]"
+            className="bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs h-8 px-2.5 sm:px-3 gap-1 cursor-pointer shadow-lg shadow-amber-400/20 transition-all hover:scale-[1.02]"
           >
             <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:block">Unduh PPTX</span>
+            <span className="hidden sm:inline">Unduh PPTX</span>
+            <span className="inline sm:hidden font-bold">Unduh</span>
           </Button>
 
           {/* Fullscreen toggle */}
@@ -220,7 +221,7 @@ export default function EditorHeader({
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-slate-400 hover:text-white hover:bg-slate-800 w-8 h-8 cursor-pointer"
+                className="text-slate-400 hover:text-white hover:bg-slate-800 w-8 h-8 cursor-pointer hidden xs:inline-flex"
                 onClick={() => {
                   if (!document.fullscreenElement) {
                     document.documentElement.requestFullscreen?.();

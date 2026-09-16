@@ -131,6 +131,7 @@ export default function MediaPickerModal({ open, onOpenChange, onSelectImage }) 
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                maxLength={80}
                 placeholder="Cari kata kunci (misal: bisnis, koding, produk, kopi)..."
                 className="pl-9 bg-slate-900 border-slate-700 text-slate-100 text-xs focus-visible:ring-sky-400"
               />

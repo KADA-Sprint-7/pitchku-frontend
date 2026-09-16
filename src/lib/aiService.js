@@ -236,23 +236,27 @@ function validUrlOrUndefined(value) {
   }
 }
 
-function sanitizeDeckPayload(payload) {
-  // Pastikan deckId selalu berupa UUID v4 valid sesuai skema backend
-  let deckId = payload.deckId;
+export function sanitizeDeckPayload(payload) {
+  // Ensure deckId is always a valid UUID v4 format as required by backend Pydantic schema
+  const rawDeckId = payload.deckId || payload.id;
+  const deckId = typeof rawDeckId === 'string' ? rawDeckId.trim() : '';
   if (!deckId || !UUID_REGEX_FULL.test(deckId)) {
-    // Generate valid UUID v4 fallback untuk backend schema validation
-    deckId = '3fa85f64-5717-4562-b3fc-2c963f66afa6';
+    throw new Error('ID deck tidak valid. Muat ulang editor lalu coba ekspor kembali.');
   }
 
+  const logoUrl = validUrlOrUndefined(payload.brandKit?.logoUrl);
   const brandKit = {
-    logoUrl: typeof payload.brandKit?.logoUrl === 'string' ? payload.brandKit.logoUrl : '',
+    ...(logoUrl ? { logoUrl } : {}),
     primaryColor: payload.brandKit?.primaryColor || '#0F4C81',
     accentColor: payload.brandKit?.accentColor || '#F2A007',
     fontFamily: payload.brandKit?.fontFamily || 'Inter',
   };
 
   const slides = (payload.slides || []).map((slide, idx) => {
-    return {
+    const imageUrl = validUrlOrUndefined(slide.imageUrl);
+    const imageQuery = typeof slide.imageQuery === 'string' ? slide.imageQuery : (slide.title || '');
+
+    const obj = {
       slideNumber: slide.slideNumber || (idx + 1),
       layout: slide.layout || 'title_bullets',
       title: slide.title || '',
@@ -261,19 +265,24 @@ function sanitizeDeckPayload(payload) {
       cards: Array.isArray(slide.cards)
         ? slide.cards.map((c) => ({
             header: c.header ?? '',
-            description: typeof c.description === 'string' ? c.description.slice(0, 80) : '',
+            description: typeof c.description === 'string' ? c.description : '',
           }))
         : [],
-      imageUrl: typeof slide.imageUrl === 'string' ? slide.imageUrl : '',
-      imageQuery: typeof slide.imageQuery === 'string' ? slide.imageQuery : '',
+      imageQuery,
       missing: Array.isArray(slide.missing) ? slide.missing : [],
     };
+
+    if (imageUrl) {
+      obj.imageUrl = imageUrl;
+    }
+
+    return obj;
   });
 
   return {
     deckId,
-    template: payload.template || 'penawaran_produk',
-    businessName: payload.businessName || 'PitchKu Presentasi',
+    template: payload.template || 'company_profile',
+    businessName: payload.businessName || payload.title || 'PitchKu Presentasi',
     brandKit,
     slides,
   };
@@ -312,6 +321,9 @@ export async function exportPptxApi(deckPayload, fileName = 'PitchKu Presentasi'
     try {
       const json = JSON.parse(rawText);
       message = json.message || json.detail || json.error || '';
+      if (!message && Array.isArray(json.detail)) {
+        message = json.detail.map(d => `${d.loc?.join('.') || 'field'}: ${d.msg}`).join('; ');
+      }
     } catch {
       message = rawText.slice(0, 300);
     }
@@ -320,13 +332,15 @@ export async function exportPptxApi(deckPayload, fileName = 'PitchKu Presentasi'
     throw new Error(errMsg);
   }
 
-  const contentType = response.headers.get('content-type') || '';
+  const contentType = (response.headers.get('content-type') || '').toLowerCase();
 
-  // Jika respon berupa binary file blob (stream download)
+  // 1. Jika respon berupa binary file blob (stream download)
   if (
     contentType.includes('application/vnd.openxmlformats') ||
     contentType.includes('application/octet-stream') ||
-    contentType.includes('application/zip')
+    contentType.includes('application/zip') ||
+    contentType.includes('application/x-pptx') ||
+    contentType.includes('binary')
   ) {
     const blob = await response.blob();
     const url = window.URL.createObjectURL(blob);
@@ -340,12 +354,34 @@ export async function exportPptxApi(deckPayload, fileName = 'PitchKu Presentasi'
     return { success: true, mode: 'blob' };
   }
 
-  // Jika respon berupa JSON
-  const data = await response.json().catch(() => ({}));
-  if (data && data.downloadUrl) {
-    window.open(data.downloadUrl, '_blank');
-    return { success: true, mode: 'url', downloadUrl: data.downloadUrl };
+  // 2. Jika respon berupa JSON
+  const cloneRes = response.clone();
+  try {
+    const data = await response.json();
+    const downloadUrl = data?.downloadUrl || data?.download_url || data?.url || data?.file_url || data?.fileUrl || data?.file || data?.data?.downloadUrl || data?.data?.url;
+    if (downloadUrl) {
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = `${fileName}.pptx`;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return { success: true, mode: 'url', downloadUrl };
+    }
+  } catch {
+    /* fallback to blob */
   }
 
-  return data;
+  // 3. Fallback: Baca sebagai Blob jika response ok
+  const blob = await cloneRes.blob();
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${fileName}.pptx`;
+  document.body.appendChild(a);
+  a.click();
+  window.URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  return { success: true, mode: 'fallback-blob' };
 }

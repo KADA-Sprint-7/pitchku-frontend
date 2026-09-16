@@ -20,6 +20,7 @@ import { exportPptxApi } from '@/lib/aiService';
 import {
   toSolidHex,
   fitDimensions,
+  coverCropDimensions,
   getImageNaturalDimensions,
   urlToDataUrl,
   hexToRgba,
@@ -398,20 +399,41 @@ export default function ExportPresentationModal({
       // Right cover image (spanning right 38% height 100% with object-cover fit)
       const hasCoverImage = !!slideImageDataUrl || !!slideData.imageUrl;
       if (hasCoverImage) {
-        try {
-          const imgOpts = {
-            x: PW * 0.62,
-            y: 0,
-            w: PW * 0.38,
-            h: PH,
-            sizing: { type: 'cover', w: PW * 0.38, h: PH },
-          };
-          if (slideImageDataUrl) {
+        const targetW = PW * 0.38;
+        const targetH = PH;
+        let sizingOpt = { type: 'contain', w: targetW, h: targetH };
+
+        if (slideImageDim && slideImageDim.width && slideImageDim.height) {
+          const crop = coverCropDimensions(slideImageDim.width, slideImageDim.height, targetW, targetH);
+          if (crop) sizingOpt = crop;
+        }
+
+        const imgOpts = {
+          x: PW * 0.62,
+          y: 0,
+          w: targetW,
+          h: targetH,
+          ...(sizingOpt ? { sizing: sizingOpt } : {}),
+        };
+        if (slideImageDataUrl) {
+          try {
             pptSlide.addImage({ ...imgOpts, data: slideImageDataUrl });
-          } else if (slideData.imageUrl && !slideData.imageUrl.startsWith('blob:')) {
-            pptSlide.addImage({ ...imgOpts, path: slideData.imageUrl });
+          } catch {
+            try {
+              const fallbackOpts = { x: PW * 0.62, y: 0, w: targetW, h: targetH, data: slideImageDataUrl };
+              pptSlide.addImage(fallbackOpts);
+            } catch { /* skip */ }
           }
-        } catch { /* skip */ }
+        } else if (slideData.imageUrl && !slideData.imageUrl.startsWith('blob:')) {
+          try {
+            pptSlide.addImage({ ...imgOpts, path: slideData.imageUrl });
+          } catch {
+            try {
+              const fallbackOpts = { x: PW * 0.62, y: 0, w: targetW, h: targetH, path: slideData.imageUrl };
+              pptSlide.addImage(fallbackOpts);
+            } catch { /* skip */ }
+          }
+        }
       }
       addAccentBar(pptSlide, 0.55, CY + 0.3, 0.5, '#' + accent);
       addText(pptSlide, slideData.title, {
@@ -431,20 +453,41 @@ export default function ExportPresentationModal({
       const contentW = hasImage ? PW * 0.58 : PW - 0.8;
 
       if (hasImage) {
-        try {
-          const imgOpts = {
-            x: PW * 0.62,
-            y: CY,
-            w: PW * 0.35,
-            h: CH,
-            sizing: { type: 'cover', w: PW * 0.35, h: CH },
-          };
-          if (slideImageDataUrl) {
+        const targetW = PW * 0.35;
+        const targetH = CH;
+        let sizingOpt = { type: 'contain', w: targetW, h: targetH };
+
+        if (slideImageDim && slideImageDim.width && slideImageDim.height) {
+          const crop = coverCropDimensions(slideImageDim.width, slideImageDim.height, targetW, targetH);
+          if (crop) sizingOpt = crop;
+        }
+
+        const imgOpts = {
+          x: PW * 0.62,
+          y: CY,
+          w: targetW,
+          h: targetH,
+          ...(sizingOpt ? { sizing: sizingOpt } : {}),
+        };
+        if (slideImageDataUrl) {
+          try {
             pptSlide.addImage({ ...imgOpts, data: slideImageDataUrl });
-          } else if (slideData.imageUrl && !slideData.imageUrl.startsWith('blob:')) {
-            pptSlide.addImage({ ...imgOpts, path: slideData.imageUrl });
+          } catch {
+            try {
+              const fallbackOpts = { x: PW * 0.62, y: CY, w: targetW, h: targetH, data: slideImageDataUrl };
+              pptSlide.addImage(fallbackOpts);
+            } catch { /* skip */ }
           }
-        } catch { /* skip */ }
+        } else if (slideData.imageUrl && !slideData.imageUrl.startsWith('blob:')) {
+          try {
+            pptSlide.addImage({ ...imgOpts, path: slideData.imageUrl });
+          } catch {
+            try {
+              const fallbackOpts = { x: PW * 0.62, y: CY, w: targetW, h: targetH, path: slideData.imageUrl };
+              pptSlide.addImage(fallbackOpts);
+            } catch { /* skip */ }
+          }
+        }
       }
 
       addAccentBar(pptSlide, 0.45, CY, 0.4, '#' + accent);
@@ -594,73 +637,60 @@ export default function ExportPresentationModal({
     return pptSlide;
   };
 
-  // ── Main PPTX Generator — Menggunakan Backend API Endpoint + Client Fallback pptxgenjs ──
+  // ── Main PPTX Generator — Canonical PptxGenJS builder ──
   const generatePPTX = async (trimmedName) => {
     if (!deckPayload) {
       throw new Error('Tidak ada data deck untuk diekspor.');
     }
 
-    // 1. Coba ekspor via backend API
-    try {
-      const res = await exportPptxApi(deckPayload, trimmedName);
-      if (res && (res.success || res.downloadUrl)) {
-        if (onExportSuccess) onExportSuccess();
-        return;
-      }
-    } catch (apiErr) {
-      console.warn('[Export PPTX] Backend API error/offline. Menggunakan client-side pptxgenjs fallback:', apiErr.message);
-    }
-
-    // 2. Client-side Fallback pptxgenjs generator
     const pptx = new pptxgen();
     pptx.layout = 'LAYOUT_16x9';
-    pptx.author = 'PitchKu AI';
-    pptx.title = trimmedName;
 
     const brandKit = deckPayload.brandKit || {};
-    const logoUrl = brandKit.logoUrl;
+    const slides = deckPayload.slides || [];
+    const totalSlides = slides.length;
 
-    // Convert logo url to data url if blob/http
+    // 1. Pre-resolve brand logo asset if available
     let logoDataUrl = null;
     let logoDim = null;
-    if (logoUrl) {
-      try {
-        logoDataUrl = await urlToDataUrl(logoUrl);
-        logoDim = await getImageNaturalDimensions(logoUrl);
-      } catch {
-        /* skip */
-      }
+    if (brandKit.logoUrl) {
+      logoDataUrl = await urlToDataUrl(brandKit.logoUrl);
+      logoDim = await getImageNaturalDimensions(brandKit.logoUrl);
     }
 
-    const slides = deckPayload.slides || [];
-    for (let idx = 0; idx < slides.length; idx++) {
-      const slide = slides[idx];
-      let slideImageDataUrl = null;
-      let slideImageDim = null;
-      if (slide.imageUrl) {
-        try {
-          slideImageDataUrl = await urlToDataUrl(slide.imageUrl);
-          slideImageDim = await getImageNaturalDimensions(slide.imageUrl);
-        } catch {
-          /* skip */
+    // 2. Pre-resolve slide images and dimensions
+    const slideAssets = await Promise.all(
+      slides.map(async (slide) => {
+        let imageDataUrl = null;
+        let imageDim = null;
+        if (slide.imageUrl) {
+          imageDataUrl = await urlToDataUrl(slide.imageUrl);
+          imageDim = await getImageNaturalDimensions(slide.imageUrl);
         }
-      }
+        return { imageDataUrl, imageDim };
+      })
+    );
 
+    // 3. Build each slide programmatically matching canonical editor layout
+    slides.forEach((slide, idx) => {
+      const asset = slideAssets[idx] || {};
       buildPptxSlide(
         pptx,
         slide,
         brandKit,
         idx + 1,
-        slides.length,
-        deckTitle,
+        totalSlides,
+        deckPayload.deckTitle || deckTitle,
         logoDim,
         logoDataUrl,
-        slideImageDataUrl,
-        slideImageDim
+        asset.imageDataUrl,
+        asset.imageDim
       );
-    }
+    });
 
+    // 4. Save client-side PPTX file
     await pptx.writeFile({ fileName: `${trimmedName}.pptx` });
+
     if (onExportSuccess) onExportSuccess();
   };
 

@@ -14,7 +14,7 @@ describe('projectStore Unit Tests', () => {
     });
 
     expect(project).toBeDefined();
-    expect(project.id).toMatch(/^proj_/);
+    expect(project.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     expect(project.title).toBe('Presentasi Tanpa Judul');
     expect(project.template).toBe('company_profile');
     expect(project.status).toBe('draft');

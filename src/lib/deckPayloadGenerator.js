@@ -10,6 +10,25 @@
 // Mock content generators per layout
 // ---------------------------------------------------------------------------
 
+function getStoredUserEmail() {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('auth-token') || key.includes('sb-'))) {
+        const item = localStorage.getItem(key);
+        if (item) {
+          const parsed = JSON.parse(item);
+          if (parsed?.user?.email) return parsed.user.email;
+          if (parsed?.currentSession?.user?.email) return parsed.currentSession.user.email;
+        }
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
 export function mockContentForLayout(layoutType, title, structuredData = {}, templateId = 'company_profile') {
   // Info dasar bisnis selalu diambil dari structuredData (tersedia di semua template)
   const company = structuredData.companyName || structuredData.productName || 'Usaha Anda';
@@ -212,16 +231,18 @@ export function mockContentForLayout(layoutType, title, structuredData = {}, tem
         imageQuery: 'premium product showcase business',
       };
 
-    case 'contact_closing':
+    case 'contact_closing': {
+      const userEmail = structuredData.userEmail || getStoredUserEmail() || 'kontak@usahamitra.id';
       return {
         subtitle: `Hubungi tim ${company} untuk kemitraan, pemesanan, atau informasi lebih lanjut`,
         cards: [
-          { header: 'Email Usaha', description: 'kontak@usahamitra.id' },
+          { header: 'Email Usaha', description: userEmail },
           { header: 'Telepon / WhatsApp', description: '+62 812-3456-7890' },
           { header: company, description: `${industry} · Est. ${year}` },
           { header: 'Target Mitra', description: target },
         ],
       };
+    }
 
     default:
       return {

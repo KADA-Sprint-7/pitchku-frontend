@@ -177,7 +177,7 @@ function DashboardPage() {
       <AppSidebar />
 
       {/* Main dashboard content workspace */}
-      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+      <main className="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto pb-20 md:pb-0">
         <div className="max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
           {/* Header */}
           <DashboardHeader />

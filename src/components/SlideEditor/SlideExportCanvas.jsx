@@ -54,14 +54,14 @@ export default function SlideExportCanvas({ deckPayload, deckTitle }) {
               height: '540px',
               position: 'relative',
               overflow: 'hidden',
-              backgroundColor: '#070C15',
-              fontFamily: safeFontFamily,
+              backgroundColor: '#FFFFFF',
+              fontFamily: 'Arial, sans-serif',
               boxSizing: 'border-box',
               marginBottom: '40px',
             }}
           >
             {/* Top Header Row */}
-            <div
+            <div className="hidden"
               style={{
                 position: 'absolute',
                 top: '14px',
@@ -122,7 +122,7 @@ export default function SlideExportCanvas({ deckPayload, deckTitle }) {
             </div>
 
             {/* Bottom Footer Bar */}
-            <div
+            <div className="hidden"
               style={{
                 position: 'absolute',
                 bottom: 0,
@@ -152,8 +152,8 @@ export default function SlideExportCanvas({ deckPayload, deckTitle }) {
               style={{
                 position: 'absolute',
                 inset: 0,
-                paddingTop: '32px',
-                paddingBottom: '28px',
+                paddingTop: 0,
+                paddingBottom: 0,
                 display: 'flex',
                 flexDirection: 'column',
                 width: '960px',

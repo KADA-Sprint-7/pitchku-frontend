@@ -161,9 +161,9 @@ export default function SlideThumbnailRail({
   const targetSlideObj = slideToDelete !== null ? slides[slideToDelete] : null;
 
   return (
-    <aside className="w-full md:w-[210px] h-[100px] md:h-full bg-[#060B17] border-t md:border-t-0 md:border-r border-slate-800/80 flex flex-col shrink-0 overflow-hidden select-none">
-      {/* Header section */}
-      <div className="p-2.5 md:p-3 border-b border-slate-800/80 flex items-center justify-between shrink-0 bg-[#080E1C]">
+    <aside className="w-full md:w-[210px] h-[64px] sm:h-[72px] md:h-full bg-[#060B17] border-t md:border-t-0 md:border-r border-slate-800/80 flex flex-row md:flex-col shrink-0 overflow-hidden select-none z-20">
+      {/* Header section (Desktop Vertical Header / Mobile Compact Left Action) */}
+      <div className="hidden md:flex p-3 border-b border-slate-800/80 items-center justify-between shrink-0 bg-[#080E1C]">
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
             Slide
@@ -183,10 +183,22 @@ export default function SlideThumbnailRail({
         </button>
       </div>
 
+      {/* Mobile Add Slide Button (Sticky Left on Mobile Bottombar) */}
+      <div className="flex md:hidden items-center px-2 py-1 border-r border-slate-800 shrink-0 bg-[#080E1C]">
+        <button
+          onClick={onOpenAddSlideModal}
+          className="flex flex-col items-center justify-center w-10 h-10 rounded-xl bg-sky-500 text-slate-950 shadow-md shadow-sky-500/20 active:scale-95 transition-all"
+          title="Tambah Slide Baru"
+        >
+          <Plus className="w-5 h-5 stroke-[2.5]" />
+          <span className="text-[8px] font-bold leading-none mt-0.5">Tambah</span>
+        </button>
+      </div>
+
       {/* List of thumbnails */}
       <div
         ref={railRef}
-        className="flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto p-2 md:p-2.5 flex flex-row md:flex-col gap-2 md:gap-2.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent items-center md:items-stretch"
+        className="flex-1 overflow-x-auto md:overflow-x-hidden md:overflow-y-auto px-2 py-1 md:p-2.5 flex flex-row md:flex-col gap-2 md:gap-2.5 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent items-center md:items-stretch snap-x md:snap-none"
         role="tablist"
         aria-label="Daftar slide"
       >
@@ -205,9 +217,9 @@ export default function SlideThumbnailRail({
               onDrop={(e) => handleDrop(e, idx)}
               onClick={() => onSlideSelect?.(idx)}
               className={cn(
-                'group relative flex items-center gap-2 p-1.5 md:p-2 rounded-xl border transition-all duration-200 cursor-pointer outline-none shrink-0',
+                'group relative flex items-center gap-1.5 md:gap-2 p-1 md:p-2 rounded-lg md:rounded-xl border transition-all duration-200 cursor-pointer outline-none shrink-0 snap-center',
                 isActive
-                  ? 'bg-sky-950/50 border-sky-400 ring-1 ring-sky-400 shadow-md shadow-sky-500/10'
+                  ? 'bg-sky-950/60 border-sky-400 ring-1 ring-sky-400 shadow-md shadow-sky-500/20'
                   : 'bg-slate-900/40 border-slate-800 hover:border-slate-700 hover:bg-slate-800/50',
                 draggedIdx === idx && 'opacity-40'
               )}
@@ -220,7 +232,7 @@ export default function SlideThumbnailRail({
               {/* Number indicator */}
               <span
                 className={cn(
-                  'text-[11px] font-bold font-mono shrink-0 w-4 text-center',
+                  'text-[10px] md:text-[11px] font-bold font-mono shrink-0 w-3.5 text-center',
                   isActive ? 'text-sky-400' : 'text-slate-500'
                 )}
               >
@@ -230,7 +242,7 @@ export default function SlideThumbnailRail({
               {/* Thumbnail canvas preview */}
               <div
                 className={cn(
-                  'w-[68px] md:w-[82px] h-[40px] md:h-[48px] rounded-md overflow-hidden border shrink-0 transition-all relative',
+                  'w-[64px] sm:w-[72px] md:w-[82px] h-[36px] sm:h-[40px] md:h-[48px] rounded overflow-hidden border shrink-0 transition-all relative',
                   isActive
                     ? 'border-sky-400/80 shadow-sm shadow-sky-400/30'
                     : 'border-slate-700/50 group-hover:border-slate-600'
@@ -249,15 +261,15 @@ export default function SlideThumbnailRail({
                 </span>
               </div>
 
-              {/* Hover action buttons (Move Up, Move Down, Delete) */}
-              <div className="absolute right-1 top-1 bottom-1 opacity-0 group-hover:opacity-100 flex flex-col justify-between bg-[#080E1C]/95 backdrop-blur-xs p-0.5 rounded border border-slate-700/70 transition-opacity z-10">
+              {/* Hover action buttons (Move Up, Move Down, Delete) - Desktop Only to prevent accidental mobile touch jumps */}
+              <div className="hidden md:group-hover:flex absolute right-0.5 top-0.5 bottom-0.5 opacity-0 group-hover:opacity-100 flex-col justify-between bg-[#080E1C]/95 backdrop-blur-xs p-0.5 rounded border border-slate-700/70 transition-opacity z-10">
                 <button
                   disabled={idx === 0}
                   onClick={(e) => handleMoveUp(e, idx)}
                   className="text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:hover:text-slate-400 p-0.5 cursor-pointer"
                   title="Naikkan Urutan"
                 >
-                  <ArrowUp className="w-3 h-3" />
+                  <ArrowUp className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </button>
                 <button
                   disabled={idx === slides.length - 1}
@@ -265,7 +277,7 @@ export default function SlideThumbnailRail({
                   className="text-slate-400 hover:text-sky-400 disabled:opacity-30 disabled:hover:text-slate-400 p-0.5 cursor-pointer"
                   title="Turunkan Urutan"
                 >
-                  <ArrowDown className="w-3 h-3" />
+                  <ArrowDown className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 </button>
                 {slides.length > 1 && (
                   <button
@@ -276,7 +288,7 @@ export default function SlideThumbnailRail({
                     className="text-slate-400 hover:text-red-400 p-0.5 cursor-pointer"
                     title="Hapus Slide"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-2.5 h-2.5 md:w-3 md:h-3" />
                   </button>
                 )}
               </div>

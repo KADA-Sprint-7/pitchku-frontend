@@ -96,6 +96,39 @@ export function fitDimensions(naturalWidth, naturalHeight, maxWidth, maxHeight) 
 }
 
 /**
+ * Calculates exact source pixel crop rectangle for PptxGenJS { type: 'crop', x, y, w, h }
+ * to mimic CSS object-fit: cover inside a target box (targetW x targetH).
+ * @param {number} naturalWidth
+ * @param {number} naturalHeight
+ * @param {number} targetW - target box width in inches
+ * @param {number} targetH - target box height in inches
+ * @returns {{ type: 'crop', x: number, y: number, w: number, h: number } | null}
+ */
+export function coverCropDimensions(naturalWidth, naturalHeight, targetW, targetH) {
+  if (!naturalWidth || !naturalHeight || naturalWidth <= 0 || naturalHeight <= 0 || !targetW || !targetH) {
+    return null;
+  }
+  const imageAspect = naturalWidth / naturalHeight;
+  const boxAspect = targetW / targetH;
+
+  if (imageAspect > boxAspect) {
+    // Image is wider than target box -> crop left & right
+    const cropW = Math.round(naturalHeight * boxAspect);
+    const cropH = naturalHeight;
+    const cropX = Math.round((naturalWidth - cropW) / 2);
+    const cropY = 0;
+    return { type: 'crop', x: cropX, y: cropY, w: cropW, h: cropH };
+  } else {
+    // Image is taller than target box -> crop top & bottom
+    const cropW = naturalWidth;
+    const cropH = Math.round(naturalWidth / boxAspect);
+    const cropX = 0;
+    const cropY = Math.round((naturalHeight - cropH) / 2);
+    return { type: 'crop', x: cropX, y: cropY, w: cropW, h: cropH };
+  }
+}
+
+/**
  * Asynchronously load an image URL and return natural dimensions
  * @param {string} url
  * @returns {Promise<{ width: number, height: number } | null>}
@@ -107,6 +140,11 @@ export function getImageNaturalDimensions(url) {
       return;
     }
     const img = new Image();
+    // Cache-buster to bypass non-CORS cached response in Chrome
+    const targetUrl = (url.startsWith('http://') || url.startsWith('https://'))
+      ? `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`
+      : url;
+
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       resolve({
@@ -115,9 +153,18 @@ export function getImageNaturalDimensions(url) {
       });
     };
     img.onerror = () => {
-      resolve(null);
+      // Fallback without crossOrigin if CORS failed
+      const imgFallback = new Image();
+      imgFallback.onload = () => {
+        resolve({
+          width: imgFallback.naturalWidth || imgFallback.width || 100,
+          height: imgFallback.naturalHeight || imgFallback.height || 100,
+        });
+      };
+      imgFallback.onerror = () => resolve(null);
+      imgFallback.src = url;
     };
-    img.src = url;
+    img.src = targetUrl;
   });
 }
 
@@ -131,37 +178,60 @@ export async function urlToDataUrl(url) {
   if (!url) return null;
   if (url.startsWith('data:image/')) return url;
 
+  // 1. Try standard fetch blob -> base64
   try {
-    const res = await fetch(url);
-    const blob = await res.blob();
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result);
-      };
-      reader.onerror = () => {
-        resolve(null);
-      };
-      reader.readAsDataURL(blob);
-    });
+    const fetchUrl = (url.startsWith('http://') || url.startsWith('https://'))
+      ? `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`
+      : url;
+    const res = await fetch(fetchUrl, { mode: 'cors' });
+    if (res.ok) {
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result && typeof reader.result === 'string' && reader.result.startsWith('data:image/')) {
+            resolve(reader.result);
+          } else {
+            resolve(null);
+          }
+        };
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    }
   } catch {
-    try {
-      return await new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
+    /* proceed to fallback */
+  }
+
+  // 2. Try Image + Canvas fallback with crossOrigin
+  try {
+    const dataUrl = await new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      const targetUrl = (url.startsWith('http://') || url.startsWith('https://'))
+        ? `${url}${url.includes('?') ? '&' : '?'}_cb=${Date.now()}`
+        : url;
+
+      img.onload = () => {
+        try {
           const canvas = document.createElement('canvas');
           canvas.width = img.naturalWidth || img.width || 100;
           canvas.height = img.naturalHeight || img.height || 100;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0);
           resolve(canvas.toDataURL('image/png'));
-        };
-        img.onerror = () => resolve(null);
-        img.src = url;
-      });
-    } catch {
-      return null;
-    }
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = targetUrl;
+    });
+
+    if (dataUrl) return dataUrl;
+  } catch {
+    /* proceed */
   }
+
+  return null;
 }

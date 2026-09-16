@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { projectStore } from '@/lib/projectStore';
 import { generateDeckPayload, mockContentForLayout } from '@/lib/deckPayloadGenerator';
 import { saveProjectDeckApi, getProjectByIdApi } from '@/lib/aiService';
+import { useAuth } from '@/context/AuthContext';
 
 // SlideEditor components
 import EditorHeader from '@/components/SlideEditor/EditorHeader';
@@ -25,11 +26,43 @@ function EditorPage() {
   const { projectId } = useParams();
   usePageTitle('Slide Editor — PitchKu');
 
-  // ── Core State ──────────────────────────────────────────────────────────
+  const { user } = useAuth();
   const [project, setProject] = useState(null);
 
   /** @type {[import('@/lib/deckPayloadGenerator').PitchKuDeckPayload, Function]} */
   const [deckPayload, setDeckPayload] = useState(null);
+
+  // Auto-sync logged-in user email into contact_closing cards if default placeholder is present
+  useEffect(() => {
+    if (!user?.email || !deckPayload || !projectId) return;
+    const userEmail = user.email;
+    let modified = false;
+
+    const updatedSlides = deckPayload.slides.map((slide) => {
+      if (slide.layout === 'contact_closing' && Array.isArray(slide.cards)) {
+        const cards = slide.cards.map((c) => {
+          if (
+            (c.header === 'Email Usaha' || c.header === 'Email') &&
+            (!c.description || c.description === 'kontak@usahamitra.id')
+          ) {
+            modified = true;
+            return { ...c, description: userEmail };
+          }
+          return c;
+        });
+        return { ...slide, cards };
+      }
+      return slide;
+    });
+
+    if (modified) {
+      setDeckPayload((prev) => {
+        const updated = { ...prev, slides: updatedSlides };
+        projectStore.saveDeckPayload(projectId, updated);
+        return updated;
+      });
+    }
+  }, [user?.email, projectId, deckPayload?.slides]);
 
   /** Index of the active slide in deckPayload.slides (0-based) */
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
