@@ -23,7 +23,7 @@ vi.mock('pptxgenjs', () => {
 
 // Mock aiService
 vi.mock('@/lib/aiService', () => ({
-  exportPptxApi: vi.fn().mockResolvedValue({ success: true }),
+  exportPptxApi: vi.fn().mockRejectedValue(new Error('Backend API offline (testing fallback)')),
 }));
 
 // Mock colorUtils image resolvers
