@@ -158,6 +158,7 @@ export async function syncProjectToBackendApi(project) {
         id: project.id,
         user_id: userId,
         title: project.title || project.deckPayload?.businessName || 'Presentasi Tanpa Judul',
+        template_type: project.template || project.deckPayload?.template || 'company_profile',
         status: project.status || 'draft',
         updated_at: new Date().toISOString(),
       };
@@ -248,12 +249,12 @@ export async function saveBrandKitApi(brandKit) {
 }
 
 /**
- * Sanitasi deckPayload agar sesuai schema backend sebelum dikirim ke /api/export/pptx.
+ * Sanitasi deckPayload agar sesuai schema backend sebelum dikirim ke /api/export/pptx atau /api/projects.
  * Memperbaiki:
- *  - deckId: hapus jika bukan UUID valid (ID lokal proj_...)
+ *  - deckId: validasi UUID v4
  *  - slides[].bullets / cards: null → []
- *  - slides[].imageUrl / imageQuery: string kosong atau null → undefined (dihapus dari payload)
- *  - slides[].cards[].description: potong ke maks 80 karakter
+ *  - slides[].imageUrl / imageQuery: string kosong atau null → undefined
+ *  - text fields (title, subtitle, bullets, cards header/description): potong ke maks 80 karakter (Pydantic max length)
  */
 const UUID_REGEX_FULL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -286,24 +287,31 @@ export function sanitizeDeckPayload(payload) {
     fontFamily: payload.brandKit?.fontFamily || 'Inter',
   };
 
+  const truncate80 = (str) => {
+    if (typeof str !== 'string') str = String(str || '');
+    return str.slice(0, 80);
+  };
+
   const slides = (payload.slides || []).map((slide, idx) => {
     const imageUrl = validUrlOrUndefined(slide.imageUrl);
-    const imageQuery = typeof slide.imageQuery === 'string' ? slide.imageQuery : (slide.title || '');
+    const rawImageQuery = typeof slide.imageQuery === 'string' ? slide.imageQuery : (slide.title || '');
 
     const obj = {
       slideNumber: slide.slideNumber || (idx + 1),
       layout: slide.layout || 'title_bullets',
-      title: slide.title || '',
-      subtitle: slide.subtitle || '',
-      bullets: Array.isArray(slide.bullets) ? slide.bullets : [],
+      title: truncate80(slide.title || ''),
+      subtitle: truncate80(slide.subtitle || ''),
+      bullets: Array.isArray(slide.bullets)
+        ? slide.bullets.map((b) => truncate80(b))
+        : [],
       cards: Array.isArray(slide.cards)
         ? slide.cards.map((c) => ({
-            header: c.header ?? '',
-            description: typeof c.description === 'string' ? c.description : '',
+            header: truncate80(c.header ?? ''),
+            description: truncate80(c.description ?? ''),
           }))
         : [],
-      imageQuery,
-      missing: Array.isArray(slide.missing) ? slide.missing : [],
+      imageQuery: truncate80(rawImageQuery),
+      missing: Array.isArray(slide.missing) ? slide.missing.map((m) => truncate80(m)) : [],
     };
 
     if (imageUrl) {
@@ -316,7 +324,7 @@ export function sanitizeDeckPayload(payload) {
   return {
     deckId,
     template: payload.template || 'company_profile',
-    businessName: payload.businessName || payload.title || 'PitchKu Presentasi',
+    businessName: truncate80(payload.businessName || payload.title || 'PitchKu Presentasi'),
     brandKit,
     slides,
   };
