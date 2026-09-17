@@ -8,7 +8,7 @@ import ProjectGrid from "@/components/DashboardPage/ProjectGrid";
 import { fetchApi } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { projectStore } from "@/lib/projectStore";
-import { deleteProjectByIdApi } from "@/lib/aiService";
+import { deleteProjectByIdApi, syncProjectToBackendApi } from "@/lib/aiService";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -64,6 +64,16 @@ function DashboardPage() {
 
         // Ambil dari projectStore (local drafts)
         const localDrafts = projectStore.getAllProjectsList();
+
+        // Auto-sync proyek lokal ke backend jika belum ada di server
+        localDrafts.forEach((localProj) => {
+          const isServerKnown = backendProjects.some(
+            (bp) => (bp.id || bp.deckId || bp.project_id) === localProj.id
+          );
+          if (!isServerKnown && localProj.id) {
+            syncProjectToBackendApi(localProj).catch(() => {});
+          }
+        });
 
         // Gabungkan berdasarkan ID unik (prioritaskan data terbaru)
         const projectMap = new Map();
