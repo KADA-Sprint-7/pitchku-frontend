@@ -162,7 +162,10 @@ export async function syncProjectToBackendApi(project) {
         status: project.status || 'draft',
         updated_at: new Date().toISOString(),
       };
-      await supabase.from('projects').upsert(dbPayload, { onConflict: 'id' });
+      const { error } = await supabase.from('projects').upsert(dbPayload, { onConflict: 'id' });
+      if (error) {
+        console.warn('[Supabase Sync] Warning:', error.message);
+      }
     } catch (err) {
       console.warn('[Supabase Sync] Warning:', err.message);
     }

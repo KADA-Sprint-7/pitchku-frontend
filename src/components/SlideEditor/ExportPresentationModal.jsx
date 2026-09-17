@@ -761,7 +761,13 @@ export default function ExportPresentationModal({
 
     try {
       if (selectedFormat === 'pptx') {
-        await generatePPTX(trimmedName);
+        try {
+          await exportPptxApi(deckPayload, trimmedName);
+          if (onExportSuccess) onExportSuccess();
+        } catch (apiErr) {
+          console.warn('[Export PPTX] Backend API offline/error, menggunakan fallback PptxGenJS client-side:', apiErr.message);
+          await generatePPTX(trimmedName);
+        }
       } else {
         await generatePDF(trimmedName);
       }
