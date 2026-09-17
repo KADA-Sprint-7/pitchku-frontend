@@ -132,9 +132,10 @@ export async function generateSlidesAi({ context, outline, project }) {
  */
 export async function saveProjectDeckApi(deckPayload) {
   try {
+    const sanitized = sanitizeDeckPayload(deckPayload);
     const res = await fetchApi('/projects', {
       method: 'POST',
-      body: JSON.stringify(deckPayload),
+      body: JSON.stringify(sanitized),
     });
     return res;
   } catch (err) {
@@ -151,36 +152,13 @@ export async function syncProjectToBackendApi(project) {
     userId = session?.user?.id || null;
   } catch (e) {}
 
-  const deckPayload = project.deckPayload || {};
-  const slides = deckPayload.slides || [];
-  const brandKit = project.brandKit || deckPayload.brandKit || {
-    primaryColor: '#0F4C81',
-    accentColor: '#F2A007',
-    fontFamily: 'Inter',
-  };
-
-  const payload = {
-    deckId: project.id,
-    id: project.id,
-    businessName: project.title || deckPayload.businessName || 'Presentasi Tanpa Judul',
-    title: project.title || deckPayload.businessName || 'Presentasi Tanpa Judul',
-    template: project.template || 'company_profile',
-    template_type: project.template || 'company_profile',
-    status: project.status || 'draft',
-    brandKit: brandKit,
-    slides: slides,
-    structuredData: project.structuredData || {},
-    rawContext: project.rawContext || '',
-    outlines: project.outlines || [],
-  };
-
   if (userId) {
     try {
       const dbPayload = {
         id: project.id,
         user_id: userId,
-        title: payload.title,
-        status: payload.status,
+        title: project.title || project.deckPayload?.businessName || 'Presentasi Tanpa Judul',
+        status: project.status || 'draft',
         updated_at: new Date().toISOString(),
       };
       await supabase.from('projects').upsert(dbPayload, { onConflict: 'id' });
@@ -190,10 +168,8 @@ export async function syncProjectToBackendApi(project) {
   }
 
   try {
-    return await fetchApi('/projects', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+    const payloadToSave = project.deckPayload || generateDeckPayload(project, project.outlines || []);
+    return await saveProjectDeckApi(payloadToSave);
   } catch (err) {
     console.warn('[Backend Sync] Warning:', err.message);
     return null;
@@ -209,12 +185,12 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  */
 export async function getProjectByIdApi(id) {
   if (!id || !UUID_REGEX.test(id)) {
-    // Proyek lokal (draf dengan prefix proj_...) tidak ada di database backend
     return null;
   }
   try {
     const res = await fetchApi(`/projects/${id}`);
-    return res;
+    const data = res?.data || res?.project || res;
+    return data;
   } catch (err) {
     console.warn(`[Get Project] Gagal fetch project ${id}:`, err.message);
     return null;

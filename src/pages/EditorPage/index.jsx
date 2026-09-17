@@ -102,8 +102,8 @@ function EditorPage() {
 
       if (!isMounted) return;
 
-      // 2. Ambil dari local store untuk sinkronisasi logo & fallback
-      const loadedProject = projectStore.getProject(projectId);
+      // 2. Ambil dari local store tanpa membuat fallback dummy dulu
+      const loadedProject = projectStore.getProject(projectId, false);
       const existingPayload = projectStore.getDeckPayload(projectId);
 
       const preservedLogoUrl =
@@ -112,35 +112,49 @@ function EditorPage() {
         loadedProject?.brandKit?.logoUrl ||
         null;
 
-      if (serverProject && serverProject.slides) {
-        const mergedBrandKit = {
-          ...(serverProject.brandKit || {}),
+      if (serverProject && (Array.isArray(serverProject.slides) || serverProject.deckId || serverProject.businessName)) {
+        const deckId = serverProject.deckId || serverProject.id || serverProject.projectId || projectId;
+        const businessName = serverProject.businessName || serverProject.title || loadedProject?.title || 'Presentasi Tanpa Judul';
+        const template = serverProject.template || serverProject.templateType || serverProject.template_type || loadedProject?.template || 'company_profile';
+        const brandKit = {
+          ...(serverProject.brandKit || loadedProject?.brandKit || {}),
           logoUrl: preservedLogoUrl,
         };
-        const updatedServerProject = {
-          ...serverProject,
-          brandKit: mergedBrandKit,
+        const slides = Array.isArray(serverProject.slides) ? serverProject.slides : (existingPayload?.slides || []);
+
+        const fullDeckPayload = {
+          deckId,
+          template,
+          businessName,
+          brandKit,
+          slides,
         };
-        setProject({
-          id: serverProject.deckId || projectId,
-          title: serverProject.businessName || 'Pitch Deck',
-          template: serverProject.template,
-          brandKit: mergedBrandKit,
-          status: serverProject.status || 'draft',
-        });
-        setDeckPayload(updatedServerProject);
-        projectStore.saveDeckPayload(projectId, updatedServerProject);
+
+        const fullProject = {
+          id: deckId,
+          title: businessName,
+          template,
+          brandKit,
+          deckPayload: fullDeckPayload,
+          status: serverProject.status || loadedProject?.status || 'draft',
+          updatedAt: serverProject.updatedAt || serverProject.updated_at || new Date().toISOString(),
+        };
+
+        projectStore.saveProjectDirect(fullProject);
+        setProject(fullProject);
+        setDeckPayload(fullDeckPayload);
         return;
       }
 
-      // Fallback local store
+      // Fallback local store jika backend offline
+      const finalProject = loadedProject || projectStore.getProject(projectId, true);
       const finalBrandKit = {
-        ...(loadedProject?.brandKit || {}),
+        ...(finalProject?.brandKit || {}),
         logoUrl: preservedLogoUrl,
       };
 
       setProject({
-        ...(loadedProject || {}),
+        ...(finalProject || {}),
         brandKit: finalBrandKit,
       });
 
@@ -155,8 +169,8 @@ function EditorPage() {
         setDeckPayload(updatedPayload);
         projectStore.saveDeckPayload(projectId, updatedPayload);
       } else {
-        const outlines = loadedProject?.outlines || [];
-        const generatedPayload = generateDeckPayload(loadedProject, outlines);
+        const outlines = finalProject?.outlines || [];
+        const generatedPayload = generateDeckPayload(finalProject, outlines);
         generatedPayload.brandKit = {
           ...(generatedPayload.brandKit || {}),
           logoUrl: preservedLogoUrl,

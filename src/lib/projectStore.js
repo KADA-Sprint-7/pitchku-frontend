@@ -79,11 +79,27 @@ export const projectStore = {
     return project;
   },
 
-  // Ambil draf proyek berdasarkan ID (dengan fallback jika direct link dibuka)
-  getProject: (projectId) => {
+  // Simpan/update data proyek langsung ke local storage tanpa sync ulang ke backend (digunakan saat load dari backend API)
+  saveProjectDirect: (project) => {
+    if (!project || !project.id) return;
+    const all = getAllProjects();
+    all[project.id] = { ...(all[project.id] || {}), ...project };
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    } catch (err) {
+      console.error('Failed to save to localStorage:', err);
+    }
+  },
+
+  // Ambil draf proyek berdasarkan ID (dengan optional fallback jika direct link dibuka)
+  getProject: (projectId, createFallbackIfMissing = true) => {
     const all = getAllProjects();
     if (all[projectId]) {
       return all[projectId];
+    }
+
+    if (!createFallbackIfMissing) {
+      return null;
     }
 
     // Fallback default draft untuk kemudahan preview/testing
