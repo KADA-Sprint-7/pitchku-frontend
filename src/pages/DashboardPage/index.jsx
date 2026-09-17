@@ -96,24 +96,37 @@ function DashboardPage() {
           });
         });
 
-        // 2. Timpa / tambahkan dari backend jika pengguna sedang terhubung dengan server
+        // 3. Timpa / tambahkan dari backend jika pengguna sedang terhubung dengan server
         backendProjects.forEach((p) => {
           const id = p.id || p.deckId || p.project_id;
           if (!id) return;
 
+          const existingLocal = projectMap.get(id);
           const slides = p.slides || p.deck_payload?.slides || p.deckPayload?.slides || [];
-          const hasPayload = slides.length > 0;
-          const slideCount = slides.length || p.slideCount || p.slide_count || 8;
+          const hasPayload = slides.length > 0 || existingLocal?.hasDeckPayload || true;
+          const slideCount = slides.length || p.slideCount || p.slide_count || existingLocal?.slideCount || 8;
           const title =
             p.title ||
             p.businessName ||
             p.business_name ||
             p.name ||
             p.structuredData?.companyName ||
+            existingLocal?.title ||
             "Presentasi Tanpa Judul";
-          const templateType = p.templateType || p.template_type || p.template || "company_profile";
+          const templateType = p.templateType || p.template_type || p.template || existingLocal?.templateType || "company_profile";
           const status = p.status === "selesai" ? "selesai" : "draft";
-          const updatedAt = p.updatedAt || p.updated_at || p.createdAt || p.created_at || new Date().toISOString();
+          const updatedAt = p.updatedAt || p.updated_at || p.createdAt || p.created_at || existingLocal?.updatedAt || new Date().toISOString();
+
+          // Simpan ringkasan proyek ke local storage jika belum ada
+          if (!projectStore.getProject(id, false)) {
+            projectStore.saveProjectDirect({
+              id,
+              title,
+              template: templateType,
+              status,
+              updatedAt,
+            });
+          }
 
           projectMap.set(id, {
             ...p,
@@ -126,8 +139,8 @@ function DashboardPage() {
             slideCount,
           });
 
-          // Simpan payload ke projectStore lokal agar saat dibuka dari mobile bisa langsung di-render
-          if (hasPayload) {
+          // Simpan payload ke projectStore lokal jika backend mengembalikan slides
+          if (slides.length > 0) {
             projectStore.saveDeckPayload(id, {
               deckId: id,
               businessName: title,
