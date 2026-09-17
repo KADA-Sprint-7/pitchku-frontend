@@ -261,11 +261,12 @@ export async function saveBrandKitApi(brandKit) {
  */
 const UUID_REGEX_FULL = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Kembalikan value jika merupakan URL valid (http/https), atau undefined untuk menghapus field */
+/** Kembalikan value jika merupakan URL valid (http/https/data:image), atau undefined untuk menghapus field */
 function validUrlOrUndefined(value) {
   if (!value || typeof value !== 'string') return undefined;
   const trimmed = value.trim();
   if (!trimmed) return undefined;
+  if (trimmed.startsWith('data:image/')) return trimmed;
   try {
     const url = new URL(trimmed);
     return (url.protocol === 'http:' || url.protocol === 'https:') ? trimmed : undefined;
