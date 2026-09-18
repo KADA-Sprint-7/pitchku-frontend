@@ -15,15 +15,12 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import pptxgen from 'pptxgenjs';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { exportPptxApi } from '@/lib/aiService';
 import {
-  toSolidHex,
   fitDimensions,
   coverCropDimensions,
   getImageNaturalDimensions,
   urlToDataUrl,
-  hexToRgba,
 } from '@/lib/colorUtils';
 
 const FORMAT_OPTIONS = [
@@ -75,9 +72,7 @@ export default function ExportPresentationModal({
     }
   }, [open, deckTitle]);
 
-  // ── Color Conversion Utilities ─────────────────────────────────────────────
-  //
-  // html2canvas v1 and pptxgenjs cannot parse modern CSS color functions like
+  // Native builders use only explicit hex colours; no browser style resolution.
   // oklch(), oklab(), color-mix(), lab(), lch(). The strategy here is to let
   // the *browser* resolve these functions to rgb()/rgba() via getComputedStyle,
   // then convert the resulting rgb string to a #RRGGBB hex that both libraries
@@ -240,7 +235,6 @@ export default function ExportPresentationModal({
     }
   };
 
-
   // ── Native pptxgenjs PPTX Builder (editable text, consistent colors) ──────
   //
   // Instead of screenshotting the DOM with html2canvas (which produces a flat,
@@ -310,8 +304,8 @@ export default function ExportPresentationModal({
     slideImageDim
   ) => {
     const primary = toSolidHex(brandKit?.primaryColor || '#0F4C81');
-    const accent  = toSolidHex(brandKit?.accentColor  || '#F2A007');
-    const font    = brandKit?.fontFamily || 'Inter';
+    const accent = toSolidHex(brandKit?.accentColor || '#F2A007');
+    const font = brandKit?.fontFamily || 'Inter';
     const logoUrl = brandKit?.logoUrl;
 
     const pptSlide = pptx.addSlide();
@@ -696,12 +690,127 @@ export default function ExportPresentationModal({
 
 
   // ── Real Multi-Page PDF Generation using html2canvas & jsPDF ────────────
+  const PDF_SCALE = 96;
+  const PDF_W = 10 * PDF_SCALE;
+  const PDF_H = 5.625 * PDF_SCALE;
+  const hex = (color, fallback) => /^#?[0-9a-f]{6}$/i.test(color || '') ? `#${String(color).replace('#', '').toUpperCase()}` : fallback;
+  const pdfText = (pdf, value, x, y, w, { fontSize = 12, bold = false, color = '#FFFFFF', align = 'left' } = {}) => {
+    if (value === undefined || value === null || value === '') return;
+    pdf.setFont('helvetica', bold ? 'bold' : 'normal'); pdf.setFontSize(fontSize); pdf.setTextColor(color);
+    pdf.text(pdf.splitTextToSize(String(value), w), align === 'center' ? x + w / 2 : align === 'right' ? x + w : x, y + fontSize * 0.78, { align, lineHeightFactor: 1.15 });
+  };
+  const pdfTextCentered = (pdf, text, centerX, centerY, opts = {}) => {
+    const { fontSize = 10, color = '#FFFFFF', bold = false, font = 'helvetica' } = opts;
+    pdf.setFont(font, bold ? 'bold' : 'normal');
+    pdf.setFontSize(fontSize);
+    pdf.setTextColor(color);
+    const textWidth = pdf.getTextWidth(text);
+    pdf.text(text, centerX - textWidth / 2, centerY + fontSize * 0.35, undefined); // offset baseline kasar
+  };
+  const pdfRect = (pdf, x, y, w, h, fillColor) => { pdf.setFillColor(fillColor); pdf.rect(x, y, w, h, 'F'); };
+  const pdfRoundRect = (pdf, x, y, w, h, r, fillColor, lineColor) => { pdf.setFillColor(fillColor); if (lineColor) { pdf.setDrawColor(lineColor); pdf.roundedRect(x, y, w, h, r, r, 'FD'); } else pdf.roundedRect(x, y, w, h, r, r, 'F'); };
+  const pdfAddImageCover = (pdf, dataUrl, x, y, targetW, targetH, naturalDim) => {
+    if (!dataUrl) return;
+    const iw = naturalDim?.width, ih = naturalDim?.height;
+    try {
+      const hasClipApi = typeof pdf.saveGraphicsState === 'function'
+        && typeof pdf.restoreGraphicsState === 'function'
+        && typeof pdf.clip === 'function'
+        && typeof pdf.discardPath === 'function'; // ⬅️ tambahan wajib
+
+      if (iw && ih && hasClipApi) {
+        const scale = Math.max(targetW / iw, targetH / ih), w = iw * scale, h = ih * scale;
+        pdf.saveGraphicsState();
+        pdf.rect(x, y, targetW, targetH);
+        pdf.clip();
+        pdf.discardPath();
+        pdf.addImage(dataUrl, undefined, x + (targetW - w) / 2, y + (targetH - h) / 2, w, h);
+        pdf.restoreGraphicsState();
+        return;
+      }
+      // fallback 'contain' — dipakai kalau clip API tidak lengkap
+      const scale = iw && ih ? Math.min(targetW / iw, targetH / ih) : 1, w = iw ? iw * scale : targetW, h = ih ? ih * scale : targetH;
+      pdf.addImage(dataUrl, undefined, x + (targetW - w) / 2, y + (targetH - h) / 2, w, h);
+    } catch (e) {
+      console.warn('[pdfAddImageCover] gagal render image:', e); // biar kelihatan kalau masih gagal
+    }
+  };
+  const getImageFormatFromDataUrl = (dataUrl) => {
+    const match = /^data:image\/(png|jpeg|jpg|webp)/i.exec(dataUrl || '');
+    if (!match) return null;
+    const type = match[1].toLowerCase();
+    if (type === 'jpg') return 'JPEG';
+    return type.toUpperCase(); // 'PNG' | 'JPEG' | 'WEBP'
+  };
+  const buildPdfSlide = (pdf, slideData, brandKit, slideNum, totalSlides, deckTitle, logoDataUrl, logoDim, slideImageDataUrl, slideImageDim) => {
+    const S = PDF_SCALE, primary = hex(brandKit?.primaryColor, '#0F4C81'), accent = hex(brandKit?.accentColor, '#F2A007');
+    const CY = .65, CH = PH - CY - .45, labels = { title_slide: 'Cover', title_bullets: 'Penjelasan', two_column: 'Komparasi', metrics_grid: 'Metrik', card_grid: 'Konten', contact_closing: 'Penutup' };
+    const t = (v, x, y, w, o) => pdfText(pdf, v, x * S, y * S, w * S, o), r = (x, y, w, h, c) => pdfRect(pdf, x * S, y * S, w * S, h * S, c), rr = (x, y, w, h, rad, c, l) => pdfRoundRect(pdf, x * S, y * S, w * S, h * S, rad * S, c, l), bar = (x, y, w, c = accent) => r(x, y, w, .05, c);
+    r(0, 0, PW, PH, '#070C15'); rr(.4, .2, 2.2, .32, .16, '#0F1A2E', accent); pdfTextCentered(
+      pdf,
+      `BAB ${String(slideNum).padStart(2, '0')} • ${(labels[slideData.layout] || 'Slide').toUpperCase()}`,
+      (.4 + 2.2 / 2) * S,   // center X pill
+      (.2 + .32 / 2) * S,   // center Y pill
+      { fontSize: 7, bold: true, color: accent }
+    );
+    if (slideData.layout !== 'title_slide' && logoDataUrl) {
+      try {
+        const format = getImageFormatFromDataUrl(logoDataUrl);
+        if (!format) throw new Error('Format logo tidak didukung jsPDF (bukan PNG/JPEG/WEBP) — kemungkinan SVG.');
+        const maxW = 1.6, maxH = .4;
+        const f = logoDim?.width ? fitDimensions(logoDim.width, logoDim.height, maxW, maxH) : { width: maxW, height: maxH, yOffset: 0 };
+        const logoX = (PW - .4 - maxW) + (maxW - f.width);
+        const logoY = .15 + (f.yOffset || 0);
+        pdf.addImage(logoDataUrl, format, logoX * S, logoY * S, f.width * S, f.height * S);
+      } catch (e) {
+        console.warn('[buildPdfSlide] logo gagal render:', e);
+      }
+    }
+    r(0, PH - .38, PW, .38, '#050A14'); t(deckTitle || 'PitchKu Presentasi', .35, PH - .38, 5, { fontSize: 8, color: '#94A3B8' }); t(`${String(slideNum).padStart(2, '0')} / ${String(totalSlides).padStart(2, '0')}`, PW - 1.2, PH - .38, .9, { fontSize: 8, color: '#94A3B8', align: 'right' });
+    if (slideData.layout === 'title_slide') {
+      const imgAreaStart = .68;      // mulai lebih ke kanan (dari .62 → .68), area gambar lebih kecil
+      const imgMargin = .3;
+      const imgX = PW * imgAreaStart + imgMargin;
+      const imgY = imgMargin;
+      const imgW = PW * (1 - imgAreaStart) - imgMargin * 2;
+      const imgH = PH - imgMargin * 2;
+      pdfAddImageCover(pdf, slideImageDataUrl, imgX * S, imgY * S, imgW * S, imgH * S, slideImageDim);
+      bar(.55, CY + .3, .5);
+      t(slideData.title, .55, CY + .5, PW * .6, { fontSize: 22, bold: true }); // area title bisa lebih lebar karena gambar lebih kecil
+      t(slideData.subtitle, .55, CY + 2, PW * .58, { fontSize: 11, color: '#CBD5E1' });
+      return;
+    }
+    if (slideData.layout === 'title_bullets') { const image = !!slideImageDataUrl, w = image ? PW * .58 : PW - .8; if (image) pdfAddImageCover(pdf, slideImageDataUrl, PW * .62 * S, CY * S, PW * .35 * S, CH * S, slideImageDim); bar(.45, CY, .4); t(slideData.title, .45, CY + .15, w, { fontSize: 18, bold: true }); t(slideData.subtitle, .45, CY + .9, w, { fontSize: 10, color: '#94A3B8' }); (slideData.bullets || []).slice(0, 5).forEach((b, i) => { if (!b) return; const y = CY + 1.45 + i * .52; pdf.setFillColor(accent); pdf.circle(.5 * S, (y + .12) * S, .05 * S, 'F'); t(b, .65, y, w - .25, { fontSize: 10, color: '#E2E8F0' }); }); return; }
+    if (slideData.layout === 'contact_closing') { bar(PW / 2 - .3, CY + .15, .6); t(slideData.title, .5, CY + .35, PW - 1, { fontSize: 24, bold: true, align: 'center' }); t(slideData.subtitle, .8, CY + 1.5, PW - 1.6, { fontSize: 11, color: '#CBD5E1', align: 'center' }); const cw = (PW - 1.2) / 2;[0, 1, 2, 3].forEach(i => { const c = (slideData.cards || [])[i]; if (!c || (!c.header && !c.description)) return; const x = .55 + i % 2 * (cw + .1), y = CY + 2.25 + Math.floor(i / 2) * .95; rr(x, y, cw, .85, .08, '#0F1A2E', '#24344D'); t(c.header, x + .12, y + .08, cw - .24, { fontSize: 8, bold: true, color: '#94A3B8' }); t(c.description, x + .12, y + .35, cw - .24, { fontSize: 10 }); }); return; }
+    bar(.45, CY, .4); t(slideData.title, .45, CY + .12, PW - .9, { fontSize: 18, bold: true }); const metrics = slideData.layout === 'metrics_grid', two = slideData.layout === 'two_column', cw = (PW - 1) / 2, ch = two ? CH - 1.05 : (CH - 1.05) / 2;
+    (two ? [0, 1] : [0, 1, 2, 3]).forEach(i => { const c = (slideData.cards || [])[i]; if (!c || (!c.header && !c.description)) return; const x = .45 + (i % 2) * (cw + .1), y = CY + .95 + (two ? 0 : Math.floor(i / 2) * (ch + .1)); rr(x, y, cw, ch, .1, '#0F1A2E', metrics && i === 0 ? accent : '#24344D'); if (two) { r(x + .15, y + .15, .35, .04, i === 0 ? primary : accent); t(c.header, x + .15, y + .25, cw - .3, { fontSize: 12, bold: true }); t(c.description, x + .15, y + .8, cw - .3, { fontSize: 9, color: '#CBD5E1' }); } else if (metrics) { t(`METRIK ${i + 1}`, x + .15, y + .1, cw - .3, { fontSize: 7, bold: true, color: i === 0 ? accent : primary }); t(c.header, x + .15, y + .32, cw - .3, { fontSize: 20, bold: true }); t(c.description, x + .15, y + .85, cw - .3, { fontSize: 9, color: '#CBD5E1' }); } else { r(x + .15, y + .12, .25, .04, accent); t(c.header, x + .15, y + .22, cw - .3, { fontSize: 11, bold: true }); t(c.description, x + .15, y + .65, cw - .3, { fontSize: 9, color: '#CBD5E1' }); } });
+  };
   const generatePDF = async (trimmedName) => {
     const slides = deckPayload?.slides || [];
     if (slides.length === 0) {
       throw new Error('Tidak ada slide untuk diekspor.');
     }
 
+    const brandKit = deckPayload?.brandKit || {};
+    const logoDataUrl = brandKit.logoUrl ? await urlToDataUrl(brandKit.logoUrl) : null;
+    const logoDim = brandKit.logoUrl ? await getImageNaturalDimensions(brandKit.logoUrl) : null;
+    const assets = await Promise.all(slides.map(async (slide) => ({
+      imageDataUrl: slide.imageUrl ? await urlToDataUrl(slide.imageUrl) : null,
+      imageDim: slide.imageUrl ? await getImageNaturalDimensions(slide.imageUrl) : null,
+    })));
+    const nativePdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [PDF_W, PDF_H] });
+
+    slides.forEach((slide, index) => {
+      if (index > 0) nativePdf.addPage([PDF_W, PDF_H], 'landscape');
+      const asset = assets[index];
+      buildPdfSlide(nativePdf, slide, brandKit, index + 1, slides.length, deckPayload.deckTitle || deckTitle,
+        logoDataUrl, logoDim, asset.imageDataUrl, asset.imageDim);
+    });
+    nativePdf.save(`${trimmedName}.pdf`);
+    if (onExportSuccess) onExportSuccess();
+    return;
+
+    /* Legacy DOM capture kept unreachable during migration. */
     // Pastikan seluruh web font (Inter / Plus Jakarta Sans) ter-load sempurna sebelum snapshot
     if (document.fonts && document.fonts.ready) {
       await document.fonts.ready;
@@ -800,7 +909,6 @@ export default function ExportPresentationModal({
           className="absolute right-3.5 top-3.5 sm:right-4 sm:top-4 text-slate-500 hover:text-white transition-colors cursor-pointer"
           aria-label="Tutup"
         >
-          <X className="w-4 h-4" />
         </button>
 
         <DialogHeader className="pb-2">
