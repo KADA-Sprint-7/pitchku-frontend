@@ -127,7 +127,7 @@ export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
     }
 
     // Validate type
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/svg+xml'];
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
     if (!validTypes.includes(file.type)) {
       toast.error('Format file tidak didukung', {
         description: 'Gunakan format PNG, JPG, atau SVG.',
@@ -184,13 +184,13 @@ export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
         {/* ── 1. Unggah Logo Usaha ──────────────────────────────────── */}
         <div className="space-y-3">
           <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">
-            Logo Perusahaan (PNG Transparan)
+            Logo Perusahaan (PNG Transparan / JPG)
           </label>
 
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+            accept="image/png,image/jpeg,image/jpg"
             onChange={handleLogoUpload}
             className="hidden"
           />
@@ -240,7 +240,7 @@ export default function BrandKitSelector({ brandKit, onBrandKitChange }) {
                 Klik untuk unggah logo bisnis
               </p>
               <p className="text-[11px] text-slate-500 mt-0.5">
-                PNG, JPG, atau SVG (Maks. 2MB)
+                PNG atau JPG (Maks. 2MB)
               </p>
             </div>
           )}
